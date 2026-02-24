@@ -2,7 +2,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Set dark mode as default
-document.documentElement.classList.add("dark");
+// Set theme from localStorage or default to dark
+const savedTheme = localStorage.getItem("cubo-theme") || "dark";
+document.documentElement.classList.toggle("dark", savedTheme === "dark");
 
 createRoot(document.getElementById("root")!).render(<App />);
