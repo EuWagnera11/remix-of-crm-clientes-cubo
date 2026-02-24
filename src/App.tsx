@@ -23,6 +23,7 @@ import Financial from "@/pages/Financial";
 import Reports from "@/pages/Reports";
 import NpsSatisfaction from "@/pages/NpsSatisfaction";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminClinicDetail from "@/pages/AdminClinicDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/nps" element={<NpsSatisfaction />} />
               </Route>
               <Route path="/admin" element={<ProtectedRoute requiredRole="platform_admin"><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/clinic/:id" element={<ProtectedRoute requiredRole="platform_admin"><AdminClinicDetail /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

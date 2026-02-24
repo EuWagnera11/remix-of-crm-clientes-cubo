@@ -179,7 +179,7 @@ export default function AdminDashboard() {
                     <td className="py-3">{c.leads}</td>
                     <td className="py-3">{c.appointments}</td>
                     <td className="py-3"><div className="flex gap-1">
-                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setImpersonating(c.name)}><Eye className="mr-1 h-3 w-3" />Acessar</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" asChild><Link to={`/admin/clinic/${c.id}`}><Eye className="mr-1 h-3 w-3" />Acessar</Link></Button>
                     </div></td>
                   </tr>
                 ))}</tbody>
