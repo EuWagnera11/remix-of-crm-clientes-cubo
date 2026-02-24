@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -210,6 +211,7 @@ export default function AppLayout() {
                 className="h-9 w-60 rounded-lg border-border/60 bg-background/60 pl-9 text-[13px] placeholder:text-muted-foreground/40 focus:bg-background"
               />
             </div>
+            <ThemeToggle />
             <NotificationsDropdown />
             <div className="h-6 w-px bg-border/50" />
             <div className="flex items-center gap-3">
