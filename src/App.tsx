@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { WhiteLabelProvider } from "@/contexts/WhiteLabelContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Patients from "@/pages/Patients";
 import PatientDetail from "@/pages/PatientDetail";
@@ -27,33 +30,36 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <WhiteLabelProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/patients" element={<Patients />} />
-              <Route path="/patients/:id" element={<PatientDetail />} />
-              <Route path="/pipeline/patients" element={<PatientPipeline />} />
-              <Route path="/pipeline/budgets" element={<BudgetPipeline />} />
-              <Route path="/budgets" element={<Budgets />} />
-              <Route path="/procedures" element={<Procedures />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/whatsapp" element={<WhatsApp />} />
-              <Route path="/agenda" element={<Agenda />} />
-              <Route path="/automations" element={<Automations />} />
-              <Route path="/financial" element={<Financial />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/nps" element={<NpsSatisfaction />} />
-            </Route>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/patients" element={<Patients />} />
+                <Route path="/patients/:id" element={<PatientDetail />} />
+                <Route path="/pipeline/patients" element={<PatientPipeline />} />
+                <Route path="/pipeline/budgets" element={<BudgetPipeline />} />
+                <Route path="/budgets" element={<Budgets />} />
+                <Route path="/procedures" element={<Procedures />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/whatsapp" element={<WhatsApp />} />
+                <Route path="/agenda" element={<Agenda />} />
+                <Route path="/automations" element={<Automations />} />
+                <Route path="/financial" element={<Financial />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/nps" element={<NpsSatisfaction />} />
+              </Route>
+              <Route path="/admin" element={<ProtectedRoute requiredRole="platform_admin"><AdminDashboard /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </WhiteLabelProvider>
   </QueryClientProvider>
 );
