@@ -12,6 +12,9 @@ import BudgetPipeline from "@/pages/BudgetPipeline";
 import Budgets from "@/pages/Budgets";
 import Procedures from "@/pages/Procedures";
 import SettingsPage from "@/pages/Settings";
+import WhatsApp from "@/pages/WhatsApp";
+import Agenda from "@/pages/Agenda";
+import Automations from "@/pages/Automations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +36,9 @@ const App = () => (
             <Route path="/budgets" element={<Budgets />} />
             <Route path="/procedures" element={<Procedures />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/whatsapp" element={<WhatsApp />} />
+            <Route path="/agenda" element={<Agenda />} />
+            <Route path="/automations" element={<Automations />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
