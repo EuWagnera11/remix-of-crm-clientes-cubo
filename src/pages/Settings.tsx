@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockTeam, type TeamMember } from "@/lib/mock-data";
-import { Plus, Edit2, Power, UserPlus } from "lucide-react";
+import { Plus, Edit2, Power, UserPlus, Upload, RotateCcw, Palette } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
+import { toast } from "@/hooks/use-toast";
 
 const ROLE_LABELS: Record<string, string> = {
   clinic_owner: "Proprietario",
@@ -19,10 +21,24 @@ const ROLE_LABELS: Record<string, string> = {
   clinic_receptionist: "Recepcionista",
 };
 
+const PRESET_COLORS = [
+  { name: "Laranja CUBO", value: "24 95% 53%" },
+  { name: "Azul Royal", value: "217 80% 55%" },
+  { name: "Verde Esmeralda", value: "152 60% 40%" },
+  { name: "Rosa Elegante", value: "340 65% 55%" },
+  { name: "Dourado", value: "38 92% 50%" },
+  { name: "Roxo Premium", value: "270 60% 55%" },
+  { name: "Turquesa", value: "174 60% 45%" },
+  { name: "Vermelho Intenso", value: "0 72% 51%" },
+];
+
 export default function SettingsPage() {
   const [team, setTeam] = useState<TeamMember[]>(mockTeam);
   const [editMember, setEditMember] = useState<TeamMember | null>(null);
   const [isNewMember, setIsNewMember] = useState(false);
+  const { settings, updateSettings, resetSettings } = useWhiteLabel();
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const faviconInputRef = useRef<HTMLInputElement>(null);
 
   const toggleMember = (id: string) => {
     setTeam((prev) => prev.map((m) => m.id === id ? { ...m, active: !m.active } : m));
@@ -43,17 +59,176 @@ export default function SettingsPage() {
     setEditMember(null);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: "logoUrl" | "faviconUrl") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Arquivo invalido", description: "Selecione uma imagem", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateSettings({ [field]: reader.result as string });
+      toast({ title: "Imagem atualizada!" });
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Configuracoes</h1>
 
-      <Tabs defaultValue="clinic">
+      <Tabs defaultValue="whitelabel">
         <TabsList className="bg-accent">
+          <TabsTrigger value="whitelabel" className="gap-1.5"><Palette className="h-3.5 w-3.5" /> White Label</TabsTrigger>
           <TabsTrigger value="clinic">Dados da Clinica</TabsTrigger>
           <TabsTrigger value="team">Equipe</TabsTrigger>
           <TabsTrigger value="integrations">Integracoes</TabsTrigger>
           <TabsTrigger value="lgpd">LGPD</TabsTrigger>
         </TabsList>
+
+        {/* White Label */}
+        <TabsContent value="whitelabel" className="mt-4 space-y-4">
+          <Card className="bg-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Identidade Visual</CardTitle>
+                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={() => { resetSettings(); toast({ title: "Configuracoes restauradas!" }); }}>
+                  <RotateCcw className="h-3.5 w-3.5" /> Restaurar padrao
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Clinic Name */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Nome da Marca</Label>
+                  <Input
+                    value={settings.clinicName}
+                    onChange={(e) => updateSettings({ clinicName: e.target.value })}
+                    placeholder="Nome que aparecera na sidebar"
+                  />
+                </div>
+                <div>
+                  <Label>Subtitulo</Label>
+                  <Input
+                    value={settings.clinicSubtitle}
+                    onChange={(e) => updateSettings({ clinicSubtitle: e.target.value })}
+                    placeholder="Ex: CRM, Clinica, Studio"
+                  />
+                </div>
+              </div>
+
+              {/* Logo Upload */}
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-3">
+                  <Label>Logo (Sidebar)</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 overflow-hidden">
+                      {settings.logoUrl ? (
+                        <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
+                      ) : (
+                        <span className="text-lg font-bold text-primary">{settings.clinicName.charAt(0)}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => logoInputRef.current?.click()}>
+                        <Upload className="h-3.5 w-3.5" /> Enviar logo
+                      </Button>
+                      {settings.logoUrl && (
+                        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => updateSettings({ logoUrl: null })}>
+                          Remover
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "logoUrl")} />
+                  <p className="text-[11px] text-muted-foreground">Recomendado: 512x512px, PNG com fundo transparente</p>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Favicon</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 overflow-hidden">
+                      {settings.faviconUrl ? (
+                        <img src={settings.faviconUrl} alt="Favicon" className="h-full w-full object-contain p-0.5" />
+                      ) : (
+                        <span className="text-xs font-bold text-primary">{settings.clinicName.charAt(0)}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => faviconInputRef.current?.click()}>
+                        <Upload className="h-3.5 w-3.5" /> Enviar favicon
+                      </Button>
+                      {settings.faviconUrl && (
+                        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => updateSettings({ faviconUrl: null })}>
+                          Remover
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <input ref={faviconInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "faviconUrl")} />
+                  <p className="text-[11px] text-muted-foreground">Recomendado: 32x32px ou 64x64px, ICO ou PNG</p>
+                </div>
+              </div>
+
+              {/* Primary Color */}
+              <div className="space-y-3">
+                <Label>Cor Primaria</Label>
+                <div className="flex flex-wrap gap-3">
+                  {PRESET_COLORS.map((color) => (
+                    <button
+                      key={color.value}
+                      onClick={() => updateSettings({ primaryColor: color.value })}
+                      className="group flex flex-col items-center gap-1.5"
+                    >
+                      <div
+                        className="h-10 w-10 rounded-xl border-2 transition-all hover:scale-110"
+                        style={{
+                          backgroundColor: `hsl(${color.value})`,
+                          borderColor: settings.primaryColor === color.value ? `hsl(${color.value})` : "transparent",
+                          boxShadow: settings.primaryColor === color.value ? `0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(${color.value})` : "none",
+                        }}
+                      />
+                      <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
+                        {color.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="rounded-xl border border-border bg-muted/20 p-6 space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pre-visualizacao</p>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden"
+                    style={{ backgroundColor: `hsl(${settings.primaryColor})` }}
+                  >
+                    {settings.logoUrl ? (
+                      <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
+                    ) : (
+                      <span className="text-sm font-bold text-white">{settings.clinicName.charAt(0)}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-base font-semibold tracking-tight">{settings.clinicName}</span>
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{settings.clinicSubtitle}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Button size="sm" style={{ backgroundColor: `hsl(${settings.primaryColor})` }} className="text-white">
+                    Botao Primario
+                  </Button>
+                  <Button size="sm" variant="outline" style={{ borderColor: `hsl(${settings.primaryColor})`, color: `hsl(${settings.primaryColor})` }}>
+                    Botao Outline
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Clinic Data */}
         <TabsContent value="clinic" className="mt-4 space-y-4">

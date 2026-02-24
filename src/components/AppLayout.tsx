@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -55,6 +56,7 @@ export default function AppLayout() {
   const location = useLocation();
   const currentPath = location.pathname;
   const breadcrumb = breadcrumbMap[currentPath] || currentPath.split("/").filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" / ");
+  const { settings } = useWhiteLabel();
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -69,19 +71,27 @@ export default function AppLayout() {
         <div className="flex h-16 items-center justify-between px-5">
           {!collapsed && (
             <Link to="/dashboard" className="flex items-center gap-3 group">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary transition-transform group-hover:scale-105">
-                <span className="text-sm font-bold text-primary-foreground">C</span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary transition-transform group-hover:scale-105 overflow-hidden">
+                {settings.logoUrl ? (
+                  <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
+                ) : (
+                  <span className="text-sm font-bold text-primary-foreground">{settings.clinicName.charAt(0)}</span>
+                )}
               </div>
               <div className="flex flex-col">
-                <span className="text-base font-semibold tracking-tight">CUBO</span>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">CRM</span>
+                <span className="text-base font-semibold tracking-tight">{settings.clinicName}</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{settings.clinicSubtitle}</span>
               </div>
             </Link>
           )}
           {collapsed && (
             <Link to="/dashboard" className="mx-auto">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-                <span className="text-sm font-bold text-primary-foreground">C</span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary overflow-hidden">
+                {settings.logoUrl ? (
+                  <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
+                ) : (
+                  <span className="text-sm font-bold text-primary-foreground">{settings.clinicName.charAt(0)}</span>
+                )}
               </div>
             </Link>
           )}
