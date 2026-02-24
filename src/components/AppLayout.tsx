@@ -33,12 +33,12 @@ const navItems = [
       { title: "Orcamentos", url: "/pipeline/budgets" },
     ],
   },
-  { title: "WhatsApp", url: "/whatsapp", icon: MessageSquare, badge: 3, disabled: true },
-  { title: "Agenda", url: "/agenda", icon: Calendar, disabled: true },
+  { title: "WhatsApp", url: "/whatsapp", icon: MessageSquare, badge: 3 },
+  { title: "Agenda", url: "/agenda", icon: Calendar },
   { title: "Financeiro", url: "/financial", icon: DollarSign, disabled: true },
   { title: "Orcamentos", url: "/budgets", icon: FileText },
   { title: "Procedimentos", url: "/procedures", icon: Package },
-  { title: "Relatorios", url: "/reports", icon: BarChart3, disabled: true },
+  { title: "Automacoes", url: "/automations", icon: BarChart3 },
   { title: "Configuracoes", url: "/settings", icon: Settings },
 ];
 
@@ -50,6 +50,9 @@ const breadcrumbMap: Record<string, string> = {
   "/budgets": "Orcamentos",
   "/procedures": "Procedimentos",
   "/settings": "Configuracoes",
+  "/whatsapp": "WhatsApp",
+  "/agenda": "Agenda",
+  "/automations": "Automacoes",
 };
 
 export default function AppLayout() {
