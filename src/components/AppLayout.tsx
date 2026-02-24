@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { LogOut } from "lucide-react";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -57,6 +59,9 @@ export default function AppLayout() {
   const currentPath = location.pathname;
   const breadcrumb = breadcrumbMap[currentPath] || currentPath.split("/").filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" / ");
   const { settings } = useWhiteLabel();
+  const { user, roles, isPlatformAdmin, signOut } = useAuth();
+  const userInitials = user?.email?.substring(0, 2).toUpperCase() || 'U';
+  const userRole = roles[0]?.role;
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -168,20 +173,20 @@ export default function AppLayout() {
           </div>
         </nav>
 
-        {/* Admin Link */}
-        {!collapsed && (
-          <div className="mx-4 h-px bg-border/50" />
-        )}
-        {!collapsed && (
-          <div className="px-3 py-2">
-            <Link
-              to="/admin"
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[12px] font-medium text-muted-foreground/70 transition-all hover:bg-accent/60 hover:text-foreground"
-            >
-              <LayoutDashboard className="h-3.5 w-3.5" strokeWidth={1.8} />
-              Painel Admin CUBO
-            </Link>
-          </div>
+        {/* Admin Link - only for platform_admin */}
+        {!collapsed && isPlatformAdmin && (
+          <>
+            <div className="mx-4 h-px bg-border/50" />
+            <div className="px-3 py-2">
+              <Link
+                to="/admin"
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[12px] font-medium text-muted-foreground/70 transition-all hover:bg-accent/60 hover:text-foreground"
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" strokeWidth={1.8} />
+                Painel Admin CUBO
+              </Link>
+            </div>
+          </>
         )}
 
         {/* Footer */}
@@ -226,12 +231,15 @@ export default function AppLayout() {
             <div className="h-6 w-px bg-border/50" />
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                DR
+                {userInitials}
               </div>
               <div className="flex flex-col">
-                <span className="text-[13px] font-medium leading-tight">Dr. Admin</span>
-                <span className="text-[10px] text-muted-foreground">Proprietario</span>
+                <span className="text-[13px] font-medium leading-tight">{user?.email?.split('@')[0]}</span>
+                <span className="text-[10px] text-muted-foreground capitalize">{userRole?.replace('_', ' ') || 'Usuário'}</span>
               </div>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={signOut} title="Sair">
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
         </header>
