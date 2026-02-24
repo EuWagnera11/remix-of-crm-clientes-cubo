@@ -15,6 +15,10 @@ import SettingsPage from "@/pages/Settings";
 import WhatsApp from "@/pages/WhatsApp";
 import Agenda from "@/pages/Agenda";
 import Automations from "@/pages/Automations";
+import Financial from "@/pages/Financial";
+import Reports from "@/pages/Reports";
+import NpsSatisfaction from "@/pages/NpsSatisfaction";
+import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,7 +43,11 @@ const App = () => (
             <Route path="/whatsapp" element={<WhatsApp />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/automations" element={<Automations />} />
+            <Route path="/financial" element={<Financial />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/nps" element={<NpsSatisfaction />} />
           </Route>
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
