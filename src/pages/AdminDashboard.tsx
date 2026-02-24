@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   Building2, DollarSign, TrendingDown, Star, AlertTriangle,
   Search, Eye, MoreHorizontal, ChevronRight, Users, BarChart3,
-  CreditCard, Settings, LayoutDashboard, ChevronLeft,
+  CreditCard, Settings, LayoutDashboard, ChevronLeft, Plus, Upload, X,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -57,6 +60,34 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "clinics" | "metrics">("dashboard");
   const [search, setSearch] = useState("");
   const [impersonating, setImpersonating] = useState<string | null>(null);
+  const [newClinicOpen, setNewClinicOpen] = useState(false);
+  const [newClinic, setNewClinic] = useState({
+    name: "", city: "", state: "", phone: "", email: "",
+    ownerName: "", ownerEmail: "", primaryColor: "24 95% 53%", notes: "",
+  });
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setLogoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCreateClinic = () => {
+    if (!newClinic.name || !newClinic.ownerName || !newClinic.ownerEmail) {
+      toast.error("Preencha os campos obrigatorios: nome da clinica, nome e e-mail do proprietario.");
+      return;
+    }
+    // TODO: Save to Supabase
+    toast.success(`Clinica "${newClinic.name}" criada com sucesso!`);
+    setNewClinicOpen(false);
+    setNewClinic({ name: "", city: "", state: "", phone: "", email: "", ownerName: "", ownerEmail: "", primaryColor: "24 95% 53%", notes: "" });
+    setLogoPreview(null);
+  };
 
   const activeClinics = mockClinics.filter(c => c.status === "ativa").length;
   const totalClinics = mockClinics.length;
@@ -161,7 +192,104 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Gestao de Clinicas</h1>
-                <Button>Nova Clinica</Button>
+                <Dialog open={newClinicOpen} onOpenChange={setNewClinicOpen}>
+                  <DialogTrigger asChild>
+                    <Button><Plus className="mr-2 h-4 w-4" />Nova Clinica</Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>Cadastrar Nova Clinica</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-6 py-2">
+                      {/* Dados Básicos */}
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dados da Clinica</p>
+                        <div className="space-y-2">
+                          <Label htmlFor="nc-name">Nome da Clinica *</Label>
+                          <Input id="nc-name" placeholder="Ex: Clinica Estetica SP" value={newClinic.name} onChange={e => setNewClinic(p => ({ ...p, name: e.target.value }))} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="nc-city">Cidade</Label>
+                            <Input id="nc-city" placeholder="Sao Paulo" value={newClinic.city} onChange={e => setNewClinic(p => ({ ...p, city: e.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="nc-state">Estado</Label>
+                            <Input id="nc-state" placeholder="SP" maxLength={2} value={newClinic.state} onChange={e => setNewClinic(p => ({ ...p, state: e.target.value.toUpperCase() }))} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="nc-phone">Telefone</Label>
+                            <Input id="nc-phone" placeholder="(11) 99999-0000" value={newClinic.phone} onChange={e => setNewClinic(p => ({ ...p, phone: e.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="nc-email">E-mail da Clinica</Label>
+                            <Input id="nc-email" type="email" placeholder="contato@clinica.com" value={newClinic.email} onChange={e => setNewClinic(p => ({ ...p, email: e.target.value }))} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Proprietário */}
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proprietario</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="nc-owner">Nome *</Label>
+                            <Input id="nc-owner" placeholder="Dr. Fulano" value={newClinic.ownerName} onChange={e => setNewClinic(p => ({ ...p, ownerName: e.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="nc-owner-email">E-mail de Acesso *</Label>
+                            <Input id="nc-owner-email" type="email" placeholder="fulano@clinica.com" value={newClinic.ownerEmail} onChange={e => setNewClinic(p => ({ ...p, ownerEmail: e.target.value }))} />
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">Um convite sera enviado para este e-mail com acesso ao CRM.</p>
+                      </div>
+
+                      {/* Logo e Cores */}
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Identidade Visual</p>
+                        <div className="flex items-center gap-4">
+                          <div
+                            onClick={() => logoInputRef.current?.click()}
+                            className="flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border bg-accent/30 transition-colors hover:border-primary/50 hover:bg-accent/60 overflow-hidden"
+                          >
+                            {logoPreview ? (
+                              <img src={logoPreview} alt="Logo preview" className="h-full w-full object-contain" />
+                            ) : (
+                              <div className="flex flex-col items-center gap-1">
+                                <Upload className="h-5 w-5 text-muted-foreground" />
+                                <span className="text-[10px] text-muted-foreground">Logo</span>
+                              </div>
+                            )}
+                          </div>
+                          <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+                          <div className="flex-1 space-y-2">
+                            <Label htmlFor="nc-color">Cor Primaria (HSL)</Label>
+                            <Input id="nc-color" placeholder="24 95% 53%" value={newClinic.primaryColor} onChange={e => setNewClinic(p => ({ ...p, primaryColor: e.target.value }))} />
+                            <div className="flex items-center gap-2">
+                              <div className="h-6 w-6 rounded-md border border-border" style={{ backgroundColor: `hsl(${newClinic.primaryColor})` }} />
+                              <span className="text-[11px] text-muted-foreground">Preview da cor</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Observações */}
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Observacoes Internas</p>
+                        <Textarea placeholder="Notas visiveis apenas pela equipe CUBO..." rows={3} value={newClinic.notes} onChange={e => setNewClinic(p => ({ ...p, notes: e.target.value }))} />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancelar</Button>
+                      </DialogClose>
+                      <Button onClick={handleCreateClinic}>Criar Clinica</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
               <div className="flex gap-2">
                 <div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="h-9 w-64 bg-background pl-9 text-sm" placeholder="Buscar clinica..." value={search} onChange={e => setSearch(e.target.value)} /></div>
