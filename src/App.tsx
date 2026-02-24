@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { WhiteLabelProvider } from "@/contexts/WhiteLabelContext";
 import Dashboard from "@/pages/Dashboard";
 import Patients from "@/pages/Patients";
 import PatientDetail from "@/pages/PatientDetail";
@@ -25,33 +26,35 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/patients" element={<Patients />} />
-            <Route path="/patients/:id" element={<PatientDetail />} />
-            <Route path="/pipeline/patients" element={<PatientPipeline />} />
-            <Route path="/pipeline/budgets" element={<BudgetPipeline />} />
-            <Route path="/budgets" element={<Budgets />} />
-            <Route path="/procedures" element={<Procedures />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/whatsapp" element={<WhatsApp />} />
-            <Route path="/agenda" element={<Agenda />} />
-            <Route path="/automations" element={<Automations />} />
-            <Route path="/financial" element={<Financial />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/nps" element={<NpsSatisfaction />} />
-          </Route>
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <WhiteLabelProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/patients" element={<Patients />} />
+              <Route path="/patients/:id" element={<PatientDetail />} />
+              <Route path="/pipeline/patients" element={<PatientPipeline />} />
+              <Route path="/pipeline/budgets" element={<BudgetPipeline />} />
+              <Route path="/budgets" element={<Budgets />} />
+              <Route path="/procedures" element={<Procedures />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/whatsapp" element={<WhatsApp />} />
+              <Route path="/agenda" element={<Agenda />} />
+              <Route path="/automations" element={<Automations />} />
+              <Route path="/financial" element={<Financial />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/nps" element={<NpsSatisfaction />} />
+            </Route>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </WhiteLabelProvider>
   </QueryClientProvider>
 );
 
