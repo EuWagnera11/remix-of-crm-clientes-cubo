@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 // Mock Admin Data
 const clinicsOverTime = [
@@ -38,19 +39,10 @@ const topClinics = [
 
 interface Clinic {
   id: string; name: string; status: "ativa" | "inativa" | "cancelada";
-  leads: number; appointments: number; revenue: number;
-  city: string; owner: string;
+  city: string | null; state: string | null; owner_name: string; owner_email: string;
+  phone: string | null; email: string | null; primary_color: string | null;
+  logo_url: string | null; notes: string | null; created_at: string;
 }
-
-const mockClinics: Clinic[] = [
-  { id: "1", name: "Clinica Estetica SP", status: "ativa", leads: 340, appointments: 180, revenue: 245000, city: "Sao Paulo", owner: "Dr. Carlos" },
-  { id: "2", name: "OdontoVida", status: "ativa", leads: 280, appointments: 150, revenue: 185000, city: "Rio de Janeiro", owner: "Dra. Fernanda" },
-  { id: "3", name: "Derma Center", status: "ativa", leads: 220, appointments: 120, revenue: 142000, city: "Belo Horizonte", owner: "Dr. Marcos" },
-  { id: "4", name: "HOF Premium", status: "ativa", leads: 200, appointments: 110, revenue: 198000, city: "Curitiba", owner: "Dra. Paula" },
-  { id: "5", name: "Clinica Bela Face", status: "ativa", leads: 180, appointments: 95, revenue: 78000, city: "Brasilia", owner: "Dra. Ana" },
-  { id: "6", name: "Sorriso Perfeito", status: "inativa", leads: 15, appointments: 8, revenue: 3200, city: "Salvador", owner: "Dr. Pedro" },
-  { id: "7", name: "Corpo e Mente", status: "cancelada", leads: 45, appointments: 20, revenue: 12000, city: "Recife", owner: "Dra. Lucia" },
-];
 
 const STATUS_COLORS = { ativa: "bg-success/10 text-success border-success/20", inativa: "bg-muted text-muted-foreground border-border", cancelada: "bg-destructive/10 text-destructive border-destructive/20" };
 
@@ -61,12 +53,34 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState("");
   const [impersonating, setImpersonating] = useState<string | null>(null);
   const [newClinicOpen, setNewClinicOpen] = useState(false);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [loadingClinics, setLoadingClinics] = useState(true);
   const [newClinic, setNewClinic] = useState({
     name: "", city: "", state: "", phone: "", email: "",
     ownerName: "", ownerEmail: "", primaryColor: "24 95% 53%", notes: "",
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [saving, setSaving] = useState(false);
+
+  const fetchClinics = async () => {
+    setLoadingClinics(true);
+    const { data, error } = await supabase
+      .from('clinics')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Error fetching clinics:', error);
+      toast.error('Erro ao carregar clinicas');
+    } else {
+      setClinics((data as Clinic[]) || []);
+    }
+    setLoadingClinics(false);
+  };
+
+  useEffect(() => {
+    fetchClinics();
+  }, []);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,23 +91,43 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleCreateClinic = () => {
+  const handleCreateClinic = async () => {
     if (!newClinic.name || !newClinic.ownerName || !newClinic.ownerEmail) {
       toast.error("Preencha os campos obrigatorios: nome da clinica, nome e e-mail do proprietario.");
       return;
     }
-    // TODO: Save to Supabase
+    setSaving(true);
+    const { error } = await supabase.from('clinics').insert({
+      name: newClinic.name,
+      city: newClinic.city || null,
+      state: newClinic.state || null,
+      phone: newClinic.phone || null,
+      email: newClinic.email || null,
+      owner_name: newClinic.ownerName,
+      owner_email: newClinic.ownerEmail,
+      primary_color: newClinic.primaryColor || null,
+      notes: newClinic.notes || null,
+    });
+    setSaving(false);
+
+    if (error) {
+      console.error('Error creating clinic:', error);
+      toast.error(`Erro ao criar clinica: ${error.message}`);
+      return;
+    }
+
     toast.success(`Clinica "${newClinic.name}" criada com sucesso!`);
     setNewClinicOpen(false);
     setNewClinic({ name: "", city: "", state: "", phone: "", email: "", ownerName: "", ownerEmail: "", primaryColor: "24 95% 53%", notes: "" });
     setLogoPreview(null);
+    fetchClinics();
   };
 
-  const activeClinics = mockClinics.filter(c => c.status === "ativa").length;
-  const totalClinics = mockClinics.length;
-  const canceladas = mockClinics.filter(c => c.status === "cancelada").length;
+  const activeClinics = clinics.filter(c => c.status === "ativa").length;
+  const totalClinics = clinics.length;
+  const canceladas = clinics.filter(c => c.status === "cancelada").length;
 
-  const filteredClinics = mockClinics.filter(c => {
+  const filteredClinics = clinics.filter(c => {
     if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -286,7 +320,7 @@ export default function AdminDashboard() {
                       <DialogClose asChild>
                         <Button variant="outline">Cancelar</Button>
                       </DialogClose>
-                      <Button onClick={handleCreateClinic}>Criar Clinica</Button>
+                      <Button onClick={handleCreateClinic} disabled={saving}>{saving ? "Criando..." : "Criar Clinica"}</Button>
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -297,15 +331,19 @@ export default function AdminDashboard() {
               <Card><CardContent className="pt-6"><div className="overflow-x-auto"><table className="w-full text-sm">
                 <thead><tr className="border-b border-border text-left text-muted-foreground">
                   <th className="pb-3 font-medium">Clinica</th><th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Cidade</th><th className="pb-3 font-medium">Leads</th><th className="pb-3 font-medium">Agendamentos</th><th className="pb-3 font-medium">Acoes</th>
+                  <th className="pb-3 font-medium">Cidade</th><th className="pb-3 font-medium">Proprietario</th><th className="pb-3 font-medium">Criada em</th><th className="pb-3 font-medium">Acoes</th>
                 </tr></thead>
-                <tbody>{filteredClinics.map(c => (
+                <tbody>{loadingClinics ? (
+                  <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">Carregando...</td></tr>
+                ) : filteredClinics.length === 0 ? (
+                  <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">Nenhuma clinica encontrada</td></tr>
+                ) : filteredClinics.map(c => (
                   <tr key={c.id} className="border-b border-border/50">
-                    <td className="py-3"><div><span className="font-medium">{c.name}</span><p className="text-xs text-muted-foreground">{c.owner}</p></div></td>
+                    <td className="py-3"><div><span className="font-medium">{c.name}</span><p className="text-xs text-muted-foreground">{c.owner_email}</p></div></td>
                     <td className="py-3"><Badge variant="outline" className={STATUS_COLORS[c.status]}>{c.status}</Badge></td>
-                    <td className="py-3 text-muted-foreground">{c.city}</td>
-                    <td className="py-3">{c.leads}</td>
-                    <td className="py-3">{c.appointments}</td>
+                    <td className="py-3 text-muted-foreground">{c.city || '-'}{c.state ? `, ${c.state}` : ''}</td>
+                    <td className="py-3">{c.owner_name}</td>
+                    <td className="py-3 text-muted-foreground">{new Date(c.created_at).toLocaleDateString('pt-BR')}</td>
                     <td className="py-3"><div className="flex gap-1">
                       <Button size="sm" variant="outline" className="h-7 text-xs" asChild><Link to={`/admin/clinic/${c.id}`}><Eye className="mr-1 h-3 w-3" />Acessar</Link></Button>
                     </div></td>
@@ -327,9 +365,9 @@ export default function AdminDashboard() {
               </div>
               <Card><CardHeader><CardTitle className="text-sm">Clinicas com Baixo Uso (Risco de Churn)</CardTitle></CardHeader><CardContent>
                 <div className="space-y-2">
-                  {mockClinics.filter(c => c.leads < 50).map(c => (
+                  {clinics.filter(c => c.status === 'inativa' || c.status === 'cancelada').map(c => (
                     <div key={c.id} className="flex items-center justify-between rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-                      <div><span className="font-medium text-sm">{c.name}</span><p className="text-xs text-muted-foreground">{c.leads} leads · {c.appointments} agendamentos</p></div>
+                      <div><span className="font-medium text-sm">{c.name}</span><p className="text-xs text-muted-foreground">{c.owner_name} · {c.city || 'Sem cidade'}</p></div>
                       <Badge variant="outline" className="border-destructive/20 text-destructive"><AlertTriangle className="mr-1 h-3 w-3" />Risco</Badge>
                     </div>
                   ))}
