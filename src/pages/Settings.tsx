@@ -685,8 +685,8 @@ export default function SettingsPage() {
               <div className="rounded-xl border border-border bg-muted/20 p-6 space-y-3">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pré-visualização</p>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden" style={{ backgroundColor: `hsl(${settings.primaryColor})` }}>
-                    {settings.logoUrl ? <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" /> : <span className="text-sm font-bold text-white">{settings.clinicName.charAt(0)}</span>}
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden ${settings.logoUrl ? '' : ''}`} style={settings.logoUrl ? {} : { backgroundColor: `hsl(${settings.primaryColor})` }}>
+                    {settings.logoUrl ? <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-cover" /> : <span className="text-sm font-bold text-white">{settings.clinicName.charAt(0)}</span>}
                   </div>
                   <div className="flex flex-col">
                     <span className="text-base font-semibold tracking-tight">{settings.clinicName}</span>

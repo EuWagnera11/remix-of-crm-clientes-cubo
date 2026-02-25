@@ -124,9 +124,9 @@ export default function AppLayout() {
         <div className="flex h-16 items-center justify-between px-5">
           {!collapsed && (
             <Link to="/dashboard" className="flex items-center gap-3 group">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary transition-transform group-hover:scale-105 overflow-hidden">
+              <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl transition-transform group-hover:scale-105 overflow-hidden", settings.logoUrl ? "" : "bg-primary")}>
                 {settings.logoUrl ? (
-                  <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
+                  <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-cover" />
                 ) : (
                   <span className="text-sm font-bold text-primary-foreground">{settings.clinicName.charAt(0)}</span>
                 )}
@@ -139,9 +139,9 @@ export default function AppLayout() {
           )}
           {collapsed && (
             <Link to="/dashboard" className="mx-auto">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary overflow-hidden">
+              <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden", settings.logoUrl ? "" : "bg-primary")}>
                 {settings.logoUrl ? (
-                  <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
+                  <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-cover" />
                 ) : (
                   <span className="text-sm font-bold text-primary-foreground">{settings.clinicName.charAt(0)}</span>
                 )}
