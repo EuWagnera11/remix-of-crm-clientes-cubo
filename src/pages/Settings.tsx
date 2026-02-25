@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Upload, RotateCcw, Palette, WifiOff, Plus, Trash2, UserPlus, Users, Shield, FileText } from "lucide-react";
+import { Upload, RotateCcw, Palette, WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, MessageSquare, Loader2 } from "lucide-react";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -176,6 +176,145 @@ function LgpdTab({ clinicId }: { clinicId: string }) {
           )}
         </CardContent>
       </Card>
+    </>
+  );
+}
+
+function IntegrationsTab({ clinicId }: { clinicId: string }) {
+  const queryClient = useQueryClient();
+  const [gcalForm, setGcalForm] = useState({ api_key: "", calendar_id: "" });
+  const [showGcalSetup, setShowGcalSetup] = useState(false);
+
+  const { data: evolutionStatus } = useQuery({
+    queryKey: ["evolution-status-settings", clinicId],
+    queryFn: async () => {
+      if (!clinicId) return { status: "disconnected" };
+      const { data } = await supabase.functions.invoke("evolution-api", {
+        body: { action: "status", clinic_id: clinicId },
+      });
+      return data || { status: "disconnected" };
+    },
+    enabled: !!clinicId,
+  });
+
+  const { data: gcalStatus } = useQuery({
+    queryKey: ["gcal-status", clinicId],
+    queryFn: async () => {
+      if (!clinicId) return { status: "disconnected" };
+      const { data } = await supabase.functions.invoke("google-calendar", {
+        body: { action: "status", clinic_id: clinicId },
+      });
+      return data || { status: "disconnected" };
+    },
+    enabled: !!clinicId,
+  });
+
+  const connectGcalMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("google-calendar", {
+        body: { action: "connect", clinic_id: clinicId, ...gcalForm },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["gcal-status"] });
+      setShowGcalSetup(false);
+      setGcalForm({ api_key: "", calendar_id: "" });
+      toast({ title: "Google Calendar conectado!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const disconnectGcalMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("google-calendar", {
+        body: { action: "disconnect", clinic_id: clinicId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["gcal-status"] });
+      toast({ title: "Google Calendar desconectado" });
+    },
+  });
+
+  const evConnected = evolutionStatus?.status === "connected";
+  const gcConnected = gcalStatus?.status === "connected";
+
+  return (
+    <>
+      <Card className="bg-card">
+        <CardHeader><CardTitle className="text-sm">Integrações</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {/* Evolution API / WhatsApp */}
+          <div className="flex items-center justify-between rounded-lg border border-border p-4">
+            <div className="flex items-center gap-3">
+              {evConnected ? <Wifi className="h-5 w-5 text-primary" /> : <WifiOff className="h-5 w-5 text-destructive" />}
+              <div>
+                <p className="text-sm font-medium">WhatsApp (Evolution API)</p>
+                <p className="text-xs text-muted-foreground">{evConnected ? `Conectado — ${evolutionStatus?.instance || ""}` : "Não conectado"}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => window.location.href = "/whatsapp"}>
+              {evConnected ? "Gerenciar" : "Configurar"}
+            </Button>
+          </div>
+
+          {/* Google Calendar */}
+          <div className="flex items-center justify-between rounded-lg border border-border p-4">
+            <div className="flex items-center gap-3">
+              {gcConnected ? <Wifi className="h-5 w-5 text-primary" /> : <WifiOff className="h-5 w-5 text-destructive" />}
+              <div>
+                <p className="text-sm font-medium">Google Calendar</p>
+                <p className="text-xs text-muted-foreground">{gcConnected ? `Conectado — ${gcalStatus?.calendar_id || ""}` : "Não conectado"}</p>
+              </div>
+            </div>
+            {gcConnected ? (
+              <Button variant="outline" size="sm" className="text-destructive" onClick={() => disconnectGcalMutation.mutate()}>
+                Desconectar
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setShowGcalSetup(true)}>
+                Configurar
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {!gcConnected && (
+        <Card className="bg-card">
+          <CardHeader><CardTitle className="text-sm">Como conectar o Google Calendar</CardTitle></CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>1. Acesse o <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">Google Cloud Console</a></p>
+            <p>2. Crie um projeto e ative a <strong>Google Calendar API</strong></p>
+            <p>3. Crie uma <strong>API Key</strong> em Credenciais</p>
+            <p>4. No Google Calendar, vá em Configurações do calendário → Integrar calendário → copie o <strong>ID do calendário</strong></p>
+            <p>5. Torne o calendário <strong>público</strong> (Configurações → Permissões de acesso → Disponibilizar ao público)</p>
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={showGcalSetup} onOpenChange={setShowGcalSetup}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Conectar Google Calendar</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>API Key do Google *</Label>
+              <Input type="password" placeholder="AIza..." value={gcalForm.api_key} onChange={e => setGcalForm(f => ({ ...f, api_key: e.target.value }))} />
+            </div>
+            <div>
+              <Label>ID do Calendário *</Label>
+              <Input placeholder="seuemail@gmail.com ou ID do calendário" value={gcalForm.calendar_id} onChange={e => setGcalForm(f => ({ ...f, calendar_id: e.target.value }))} />
+            </div>
+            <Button className="w-full" onClick={() => connectGcalMutation.mutate()} disabled={!gcalForm.api_key || !gcalForm.calendar_id || connectGcalMutation.isPending}>
+              {connectGcalMutation.isPending ? "Conectando..." : "Testar e Conectar"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -540,19 +679,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="integrations" className="mt-4 space-y-4">
-          <Card className="bg-card">
-            <CardHeader><CardTitle className="text-sm">Integrações</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border border-border p-4">
-                <div className="flex items-center gap-3"><WifiOff className="h-5 w-5 text-destructive" /><div><p className="text-sm font-medium">WhatsApp (Evolution API)</p><p className="text-xs text-muted-foreground">Não conectado</p></div></div>
-                <Button variant="outline" size="sm" disabled>Configurar</Button>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-border p-4">
-                <div className="flex items-center gap-3"><WifiOff className="h-5 w-5 text-destructive" /><div><p className="text-sm font-medium">Google Calendar</p><p className="text-xs text-muted-foreground">Não conectado</p></div></div>
-                <Button variant="outline" size="sm" disabled>Configurar</Button>
-              </div>
-            </CardContent>
-          </Card>
+          <IntegrationsTab clinicId={effectiveClinicId} />
         </TabsContent>
 
         <TabsContent value="lgpd" className="mt-4 space-y-4">
