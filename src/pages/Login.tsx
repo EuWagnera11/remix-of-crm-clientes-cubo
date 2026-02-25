@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import cuboLogo from '@/assets/cubo-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,20 +69,7 @@ export default function Login() {
 
         {/* Content */}
         <div className="relative z-10 flex flex-col h-full px-12 py-10">
-          {/* Logo top */}
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "flex h-11 w-11 items-center justify-center rounded-xl overflow-hidden",
-              settings.logoUrl ? "bg-white/20 backdrop-blur-sm" : "bg-white/20"
-            )}>
-              {settings.logoUrl ? (
-                <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-lg font-bold text-white">{settings.clinicName.charAt(0)}</span>
-              )}
-            </div>
-            <span className="text-xl font-bold text-white tracking-tight">{settings.clinicName}</span>
-          </div>
+          {/* No logo/name on left panel */}
 
           {/* Center message — serif italic like the site */}
           <div className="flex flex-1 flex-col justify-center max-w-lg">
@@ -125,7 +113,9 @@ export default function Login() {
       </div>
 
       {/* Right Panel — Login Form */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-background px-6 py-12">
+      <div className="relative flex flex-1 flex-col items-center justify-center bg-background px-6 py-12">
+        {/* Logo top-right */}
+        <img src={cuboLogo} alt="CUBO" className="absolute top-6 right-6 h-10 hidden lg:block" />
         <div className="w-full max-w-[400px] space-y-8">
           {/* Mobile-only brand */}
           <div className="flex flex-col items-center gap-4 lg:hidden">
