@@ -87,7 +87,7 @@ export default function Financial() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Financeiro</h1>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Recebido no Mês</p></div>
@@ -143,12 +143,12 @@ export default function Financial() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Paciente</TableHead>
-                  <TableHead>Parcela</TableHead>
+                  <TableHead className="hidden sm:table-cell">Parcela</TableHead>
                   <TableHead>Valor</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Pagamento</TableHead>
+                  <TableHead className="hidden sm:table-cell">Vencimento</TableHead>
+                  <TableHead className="hidden md:table-cell">Pagamento</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Ações</TableHead>
+                  <TableHead className="w-[80px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -156,11 +156,11 @@ export default function Financial() {
                   const st = STATUS_COLORS[inst.status] || STATUS_COLORS.pendente;
                   return (
                     <TableRow key={inst.id}>
-                      <TableCell className="font-medium">{inst.patients?.name || "—"}</TableCell>
-                      <TableCell>{inst.installment_number}/{inst.total_installments}</TableCell>
-                      <TableCell>R$ {Number(inst.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
-                      <TableCell>{format(new Date(inst.due_date), "dd/MM/yyyy")}</TableCell>
-                      <TableCell>{inst.payment_method || "—"}</TableCell>
+                      <TableCell className="font-medium text-sm">{inst.patients?.name || "—"}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{inst.installment_number}/{inst.total_installments}</TableCell>
+                      <TableCell className="text-sm">R$ {Number(inst.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{format(new Date(inst.due_date), "dd/MM/yyyy")}</TableCell>
+                      <TableCell className="hidden md:table-cell">{inst.payment_method || "—"}</TableCell>
                       <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
                       <TableCell>
                         {inst.status !== "pago" && (
