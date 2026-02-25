@@ -1,13 +1,15 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, RotateCcw, Palette, WifiOff } from "lucide-react";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 
 const PRESET_COLORS = [
@@ -23,8 +25,71 @@ const PRESET_COLORS = [
 
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useWhiteLabel();
+  const { clinicId, isPlatformAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
+
+  const [clinicForm, setClinicForm] = useState({ name: "", phone: "", email: "" });
+
+  // Fetch clinic data
+  const { data: clinic } = useQuery({
+    queryKey: ["clinic-settings", clinicId],
+    queryFn: async () => {
+      if (!clinicId) return null;
+      const { data } = await supabase.from("clinics").select("*").eq("id", clinicId).single();
+      return data;
+    },
+    enabled: !!clinicId,
+  });
+
+  // For platform_admin, get first clinic
+  const { data: adminClinics } = useQuery({
+    queryKey: ["clinics-for-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("clinics").select("*");
+      return data || [];
+    },
+    enabled: isPlatformAdmin && !clinicId,
+  });
+
+  const [selectedClinicId, setSelectedClinicId] = useState("");
+  const effectiveClinic = clinic || adminClinics?.find(c => c.id === selectedClinicId);
+  const effectiveClinicId = clinicId || selectedClinicId;
+
+  useEffect(() => {
+    if (effectiveClinic) {
+      setClinicForm({
+        name: effectiveClinic.name || "",
+        phone: effectiveClinic.phone || "",
+        email: effectiveClinic.email || "",
+      });
+    }
+  }, [effectiveClinic]);
+
+  useEffect(() => {
+    if (adminClinics?.length && !selectedClinicId) {
+      setSelectedClinicId(adminClinics[0].id);
+    }
+  }, [adminClinics, selectedClinicId]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!effectiveClinicId) throw new Error("Nenhuma clínica selecionada");
+      const { error } = await supabase.from("clinics").update({
+        name: clinicForm.name,
+        phone: clinicForm.phone || null,
+        email: clinicForm.email || null,
+      }).eq("id", effectiveClinicId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clinic-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["clinics-for-settings"] });
+      toast({ title: "Dados salvos com sucesso!" });
+    },
+    onError: (e: any) => toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" }),
+  });
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: "logoUrl" | "faviconUrl") => {
     const file = e.target.files?.[0];
@@ -133,16 +198,25 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="clinic" className="mt-4 space-y-4">
+          {isPlatformAdmin && !clinicId && adminClinics && adminClinics.length > 0 && (
+            <div className="flex gap-2">
+              {adminClinics.map(c => (
+                <Button key={c.id} variant={selectedClinicId === c.id ? "default" : "outline"} size="sm"
+                  onClick={() => setSelectedClinicId(c.id)}>{c.name}</Button>
+              ))}
+            </div>
+          )}
           <Card className="bg-card">
             <CardHeader><CardTitle className="text-sm">Informacoes Gerais</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div><Label>Nome da Clinica</Label><Input placeholder="Nome da clinica" /></div>
-                <div><Label>CNPJ</Label><Input placeholder="00.000.000/0001-00" /></div>
-                <div><Label>Telefone</Label><Input placeholder="(00) 0000-0000" /></div>
-                <div><Label>E-mail</Label><Input placeholder="contato@clinica.com" /></div>
+                <div><Label>Nome da Clinica</Label><Input value={clinicForm.name} onChange={e => setClinicForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome da clinica" /></div>
+                <div><Label>Telefone</Label><Input value={clinicForm.phone} onChange={e => setClinicForm(f => ({ ...f, phone: e.target.value }))} placeholder="(00) 0000-0000" /></div>
+                <div><Label>E-mail</Label><Input value={clinicForm.email} onChange={e => setClinicForm(f => ({ ...f, email: e.target.value }))} placeholder="contato@clinica.com" /></div>
               </div>
-              <Button>Salvar Alteracoes</Button>
+              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? "Salvando..." : "Salvar Alteracoes"}
+              </Button>
             </CardContent>
           </Card>
 
