@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Users } from "lucide-react";
+import { Search, Plus, Users, Tag, X, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,8 +20,12 @@ const STAGE_LABELS: Record<string, string> = {
   contacted: "Contatado",
   scheduled: "Agendado",
   in_treatment: "Em Tratamento",
+  em_tratamento: "Em Tratamento",
+  paciente_ativo: "Paciente Ativo",
   completed: "Concluido",
   lost: "Perdido",
+  inativo: "Inativo",
+  vip: "VIP",
 };
 
 const STAGE_COLORS: Record<string, string> = {
@@ -28,9 +33,15 @@ const STAGE_COLORS: Record<string, string> = {
   contacted: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   scheduled: "bg-primary/10 text-primary border-primary/20",
   in_treatment: "bg-green-500/10 text-green-500 border-green-500/20",
+  em_tratamento: "bg-green-500/10 text-green-500 border-green-500/20",
+  paciente_ativo: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
   completed: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
   lost: "bg-destructive/10 text-destructive border-destructive/20",
+  inativo: "bg-muted text-muted-foreground border-border",
+  vip: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
 };
+
+const SUGGESTED_TAGS = ["VIP", "Retorno", "Ortodontia", "Implante", "Estética", "Clareamento", "Urgência", "Convênio"];
 
 export default function Patients() {
   const navigate = useNavigate();
@@ -38,15 +49,14 @@ export default function Patients() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", cpf: "", gender: "", source: "manual", stage: "lead", notes: "" });
+  const [filterStage, setFilterStage] = useState<string>("all");
+  const [filterTag, setFilterTag] = useState<string>("");
+  const [form, setForm] = useState({ name: "", email: "", phone: "", cpf: "", gender: "", source: "manual", stage: "lead", notes: "", tags: [] as string[], utm_source: "", utm_medium: "", utm_campaign: "" });
+  const [tagInput, setTagInput] = useState("");
 
-  // For platform_admin, get first clinic
   const { data: clinics } = useQuery({
     queryKey: ["clinics-for-select"],
-    queryFn: async () => {
-      const { data } = await supabase.from("clinics").select("id, name");
-      return data || [];
-    },
+    queryFn: async () => { const { data } = await supabase.from("clinics").select("id, name"); return data || []; },
     enabled: isPlatformAdmin && !clinicId,
   });
 
@@ -76,27 +86,45 @@ export default function Patients() {
         source: form.source,
         stage: form.stage,
         notes: form.notes || null,
+        tags: form.tags,
+        utm_source: form.utm_source || null,
+        utm_medium: form.utm_medium || null,
+        utm_campaign: form.utm_campaign || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       setShowForm(false);
-      setForm({ name: "", email: "", phone: "", cpf: "", gender: "", source: "manual", stage: "lead", notes: "" });
+      setForm({ name: "", email: "", phone: "", cpf: "", gender: "", source: "manual", stage: "lead", notes: "", tags: [], utm_source: "", utm_medium: "", utm_campaign: "" });
       toast({ title: "Paciente cadastrado com sucesso!" });
     },
     onError: (e: any) => toast({ title: "Erro ao cadastrar", description: e.message, variant: "destructive" }),
   });
 
-  const filtered = patients.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    (p.phone && p.phone.includes(search)) ||
-    (p.email && p.email.toLowerCase().includes(search.toLowerCase()))
-  );
+  const addTag = (tag: string) => {
+    const t = tag.trim();
+    if (t && !form.tags.includes(t)) setForm(f => ({ ...f, tags: [...f.tags, t] }));
+    setTagInput("");
+  };
+
+  const removeTag = (tag: string) => setForm(f => ({ ...f, tags: f.tags.filter(t => t !== tag) }));
+
+  // Collect all unique tags from existing patients
+  const allTags = [...new Set(patients.flatMap((p: any) => p.tags || []))];
+
+  const filtered = patients.filter((p: any) => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.phone && p.phone.includes(search)) ||
+      (p.email && p.email.toLowerCase().includes(search.toLowerCase()));
+    const matchesStage = filterStage === "all" || p.stage === filterStage;
+    const matchesTag = !filterTag || (p.tags && p.tags.includes(filterTag));
+    return matchesSearch && matchesStage && matchesTag;
+  });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold">Pacientes / Leads</h1>
         <div className="flex gap-2">
           {isPlatformAdmin && !clinicId && (
@@ -115,6 +143,27 @@ export default function Patients() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Buscar por nome, telefone ou e-mail..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
+          <Select value={filterStage} onValueChange={setFilterStage}>
+            <SelectTrigger className="w-40"><SelectValue placeholder="Etapa" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas etapas</SelectItem>
+              {Object.entries(STAGE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {allTags.length > 0 && (
+            <Select value={filterTag} onValueChange={setFilterTag}>
+              <SelectTrigger className="w-36"><SelectValue placeholder="Tag" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todas tags</SelectItem>
+                {allTags.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          {(filterStage !== "all" || filterTag) && (
+            <Button variant="ghost" size="sm" onClick={() => { setFilterStage("all"); setFilterTag(""); }} className="gap-1 text-xs">
+              <X className="h-3 w-3" /> Limpar filtros
+            </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -122,31 +171,42 @@ export default function Patients() {
         <Card>
           <CardContent className="py-16 text-center">
             <Users className="mx-auto h-12 w-12 text-muted-foreground/30" />
-            <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhum paciente cadastrado</p>
+            <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhum paciente encontrado</p>
             <p className="mt-1 text-sm text-muted-foreground/70">Clique em "Novo Paciente" para adicionar.</p>
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <table className="w-full">
               <thead><tr className="border-b border-border text-left text-sm text-muted-foreground">
                 <th className="p-3 font-medium">Nome</th>
-                <th className="p-3 font-medium">Telefone</th>
-                <th className="p-3 font-medium">E-mail</th>
+                <th className="p-3 font-medium hidden md:table-cell">Telefone</th>
+                <th className="p-3 font-medium hidden lg:table-cell">E-mail</th>
                 <th className="p-3 font-medium">Etapa</th>
-                <th className="p-3 font-medium">Origem</th>
-                <th className="p-3 font-medium">Cadastro</th>
+                <th className="p-3 font-medium hidden md:table-cell">Tags</th>
+                <th className="p-3 font-medium hidden lg:table-cell">Origem</th>
+                <th className="p-3 font-medium hidden sm:table-cell">Cadastro</th>
               </tr></thead>
               <tbody>
-                {filtered.map(p => (
+                {filtered.map((p: any) => (
                   <tr key={p.id} className="border-b border-border/50 hover:bg-accent/30 cursor-pointer" onClick={() => navigate(`/patients/${p.id}`)}>
                     <td className="p-3 font-medium">{p.name}</td>
-                    <td className="p-3 text-sm">{p.phone || "—"}</td>
-                    <td className="p-3 text-sm">{p.email || "—"}</td>
-                    <td className="p-3"><Badge variant="outline" className={STAGE_COLORS[p.stage || "lead"]}>{STAGE_LABELS[p.stage || "lead"]}</Badge></td>
-                    <td className="p-3 text-sm capitalize">{p.source || "—"}</td>
-                    <td className="p-3 text-sm text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")}</td>
+                    <td className="p-3 text-sm hidden md:table-cell">{p.phone || "—"}</td>
+                    <td className="p-3 text-sm hidden lg:table-cell">{p.email || "—"}</td>
+                    <td className="p-3"><Badge variant="outline" className={STAGE_COLORS[p.stage || "lead"]}>{STAGE_LABELS[p.stage || "lead"] || p.stage}</Badge></td>
+                    <td className="p-3 hidden md:table-cell">
+                      <div className="flex gap-1 flex-wrap">
+                        {(p.tags || []).slice(0, 3).map((tag: string) => (
+                          <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>
+                        ))}
+                        {(p.tags || []).length > 3 && <span className="text-xs text-muted-foreground">+{p.tags.length - 3}</span>}
+                      </div>
+                    </td>
+                    <td className="p-3 text-sm capitalize hidden lg:table-cell">
+                      {p.utm_campaign ? `${p.source || "—"} (${p.utm_campaign})` : (p.source || "—")}
+                    </td>
+                    <td className="p-3 text-sm text-muted-foreground hidden sm:table-cell">{new Date(p.created_at).toLocaleDateString("pt-BR")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -156,7 +216,7 @@ export default function Patients() {
       )}
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Novo Paciente</DialogTitle></DialogHeader>
           <div className="space-y-4">
             {isPlatformAdmin && !clinicId && (
@@ -174,7 +234,7 @@ export default function Patients() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>CPF</Label><Input value={form.cpf} onChange={e => setForm(f => ({ ...f, cpf: e.target.value }))} placeholder="000.000.000-00" /></div>
-              <div><Label>Genero</Label>
+              <div><Label>Gênero</Label>
                 <Select value={form.gender} onValueChange={v => setForm(f => ({ ...f, gender: v }))}>
                   <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
                   <SelectContent>
@@ -193,8 +253,11 @@ export default function Patients() {
                     <SelectItem value="manual">Manual</SelectItem>
                     <SelectItem value="instagram">Instagram</SelectItem>
                     <SelectItem value="google">Google</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
                     <SelectItem value="indicacao">Indicação</SelectItem>
                     <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                    <SelectItem value="site">Site</SelectItem>
+                    <SelectItem value="landing_page">Landing Page</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -207,6 +270,41 @@ export default function Patients() {
                 </Select>
               </div>
             </div>
+
+            {/* Tags */}
+            <div>
+              <Label className="flex items-center gap-1.5"><Tag className="h-3.5 w-3.5" /> Tags</Label>
+              <div className="flex flex-wrap gap-1.5 mt-1.5 mb-2">
+                {form.tags.map(tag => (
+                  <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                    {tag}
+                    <button onClick={() => removeTag(tag)} className="ml-0.5 hover:text-destructive"><X className="h-3 w-3" /></button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Adicionar tag..."
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(tagInput); } }}
+                  className="flex-1" />
+                <Button variant="outline" size="sm" onClick={() => addTag(tagInput)} disabled={!tagInput.trim()}>Adicionar</Button>
+              </div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {SUGGESTED_TAGS.filter(t => !form.tags.includes(t)).slice(0, 6).map(t => (
+                  <button key={t} onClick={() => addTag(t)} className="text-[10px] px-2 py-0.5 rounded-full border border-border text-muted-foreground hover:bg-accent transition-colors">{t}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* UTM Tracking */}
+            <div className="border-t border-border pt-4">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Rastreamento de Campanha (opcional)</Label>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                <Input value={form.utm_source} onChange={e => setForm(f => ({ ...f, utm_source: e.target.value }))} placeholder="utm_source" className="text-xs" />
+                <Input value={form.utm_medium} onChange={e => setForm(f => ({ ...f, utm_medium: e.target.value }))} placeholder="utm_medium" className="text-xs" />
+                <Input value={form.utm_campaign} onChange={e => setForm(f => ({ ...f, utm_campaign: e.target.value }))} placeholder="utm_campaign" className="text-xs" />
+              </div>
+            </div>
+
             <div><Label>Observações</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Observações sobre o paciente..." /></div>
             <Button className="w-full" onClick={() => createMutation.mutate()} disabled={!form.name || createMutation.isPending}>
               {createMutation.isPending ? "Salvando..." : "Cadastrar Paciente"}
