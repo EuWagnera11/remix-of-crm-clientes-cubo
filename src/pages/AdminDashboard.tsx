@@ -334,14 +334,16 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               <h1 className="text-2xl font-bold">Metricas de Uso</h1>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Total Leads</p><p className="text-2xl font-bold">4.280</p></CardContent></Card>
-                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Msgs WhatsApp</p><p className="text-2xl font-bold">28.500</p></CardContent></Card>
-                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Agendamentos</p><p className="text-2xl font-bold">3.120</p></CardContent></Card>
-                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Orcamentos</p><p className="text-2xl font-bold">1.850</p></CardContent></Card>
+                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Total Leads</p><p className="text-2xl font-bold text-muted-foreground">—</p></CardContent></Card>
+                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Msgs WhatsApp</p><p className="text-2xl font-bold text-muted-foreground">—</p></CardContent></Card>
+                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Agendamentos</p><p className="text-2xl font-bold text-muted-foreground">—</p></CardContent></Card>
+                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Orcamentos</p><p className="text-2xl font-bold text-muted-foreground">—</p></CardContent></Card>
               </div>
               <Card><CardHeader><CardTitle className="text-sm">Clinicas com Baixo Uso (Risco de Churn)</CardTitle></CardHeader><CardContent>
                 <div className="space-y-2">
-                  {clinics.filter(c => c.status === 'inativa' || c.status === 'cancelada').map(c => (
+                  {clinics.filter(c => c.status === 'inativa' || c.status === 'cancelada').length === 0 ? (
+                    <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma clinica com baixo uso no momento.</p>
+                  ) : clinics.filter(c => c.status === 'inativa' || c.status === 'cancelada').map(c => (
                     <div key={c.id} className="flex items-center justify-between rounded-lg border border-destructive/20 bg-destructive/5 p-3">
                       <div><span className="font-medium text-sm">{c.name}</span><p className="text-xs text-muted-foreground">{c.owner_name} · {c.city || 'Sem cidade'}</p></div>
                       <Badge variant="outline" className="border-destructive/20 text-destructive"><AlertTriangle className="mr-1 h-3 w-3" />Risco</Badge>

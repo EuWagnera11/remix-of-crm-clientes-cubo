@@ -45,7 +45,7 @@ export default function AdminClinicDetail() {
         .from("clinics")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching clinic:", error);
