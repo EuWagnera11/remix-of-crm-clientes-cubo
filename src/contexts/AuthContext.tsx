@@ -87,8 +87,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error };
+
+    // Check if user's clinic is active
+    const { data: userRoles } = await supabase
+      .from('user_roles')
+      .select('role, clinic_id')
+      .eq('user_id', data.user.id);
+
+    const isAdmin = userRoles?.some(r => r.role === 'platform_admin');
+    if (!isAdmin && userRoles?.length) {
+      const clinicIds = [...new Set(userRoles.filter(r => r.clinic_id).map(r => r.clinic_id))];
+      if (clinicIds.length > 0) {
+        const { data: clinics } = await supabase
+          .from('clinics')
+          .select('id, status')
+          .in('id', clinicIds);
+
+        const allInactive = clinics?.every(c => c.status === 'cancelada' || c.status === 'inativa');
+        if (allInactive) {
+          await supabase.auth.signOut();
+          return { error: { message: 'Sua conta foi desativada. Entre em contato com o administrador.' } };
+        }
+      }
+    }
+
+    return { error: null };
   };
 
   const signOut = async () => {

@@ -42,7 +42,6 @@ serve(async (req) => {
       const { clinic_id } = params;
       if (!clinic_id) throw new Error("clinic_id required");
 
-      // Get user_roles for this clinic
       const { data: roles } = await supabaseAdmin
         .from("user_roles")
         .select("id, user_id, role")
@@ -54,7 +53,6 @@ serve(async (req) => {
         });
       }
 
-      // Get user details from auth
       const userIds = [...new Set(roles.map(r => r.user_id))];
       const users = [];
       for (const uid of userIds) {
@@ -67,6 +65,8 @@ serve(async (req) => {
             role: userRoles[0]?.role,
             role_id: userRoles[0]?.id,
             created_at: authUser.created_at,
+            banned: !!authUser.banned_until,
+            banned_until: authUser.banned_until,
           });
         }
       }
@@ -80,7 +80,6 @@ serve(async (req) => {
       const { email, password, role, clinic_id } = params;
       if (!email || !password || !role || !clinic_id) throw new Error("email, password, role, clinic_id required");
 
-      // Create auth user
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -88,7 +87,6 @@ serve(async (req) => {
       });
       if (createError) throw createError;
 
-      // Assign role
       const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
         user_id: newUser.user.id,
         role,
@@ -117,11 +115,99 @@ serve(async (req) => {
       const { user_id, role_id } = params;
       if (!role_id) throw new Error("role_id required");
 
-      // Delete role
       const { error } = await supabaseAdmin.from("user_roles").delete().eq("id", role_id);
       if (error) throw error;
 
       return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ===== BAN: block a user from logging in =====
+    if (action === "ban_user") {
+      const { user_id } = params;
+      if (!user_id) throw new Error("user_id required");
+
+      // Ban for ~100 years (effectively permanent)
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
+        ban_duration: "876000h",
+      });
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ===== UNBAN: restore login access =====
+    if (action === "unban_user") {
+      const { user_id } = params;
+      if (!user_id) throw new Error("user_id required");
+
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
+        ban_duration: "none",
+      });
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ===== BAN ALL CLINIC USERS =====
+    if (action === "ban_clinic") {
+      const { clinic_id } = params;
+      if (!clinic_id) throw new Error("clinic_id required");
+
+      // Get all users of this clinic (excluding platform_admins)
+      const { data: roles } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id, role")
+        .eq("clinic_id", clinic_id)
+        .neq("role", "platform_admin");
+
+      const userIds = [...new Set((roles || []).map(r => r.user_id))];
+      const errors: string[] = [];
+
+      for (const uid of userIds) {
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(uid, {
+          ban_duration: "876000h",
+        });
+        if (error) errors.push(`${uid}: ${error.message}`);
+      }
+
+      // Also update clinic status
+      await supabaseAdmin.from("clinics").update({ status: "inativa" }).eq("id", clinic_id);
+
+      return new Response(JSON.stringify({ success: true, banned_count: userIds.length, errors }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ===== UNBAN ALL CLINIC USERS =====
+    if (action === "unban_clinic") {
+      const { clinic_id } = params;
+      if (!clinic_id) throw new Error("clinic_id required");
+
+      const { data: roles } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id")
+        .eq("clinic_id", clinic_id);
+
+      const userIds = [...new Set((roles || []).map(r => r.user_id))];
+      const errors: string[] = [];
+
+      for (const uid of userIds) {
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(uid, {
+          ban_duration: "none",
+        });
+        if (error) errors.push(`${uid}: ${error.message}`);
+      }
+
+      // Reactivate clinic
+      await supabaseAdmin.from("clinics").update({ status: "ativa" }).eq("id", clinic_id);
+
+      return new Response(JSON.stringify({ success: true, unbanned_count: userIds.length, errors }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
