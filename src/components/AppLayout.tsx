@@ -269,8 +269,9 @@ export default function AppLayout() {
                 <span className="text-[13px] font-medium leading-tight">{user?.email?.split('@')[0]}</span>
                 <span className="text-[10px] text-muted-foreground capitalize">{userRole?.replace('_', ' ') || 'Usuário'}</span>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={signOut} title="Sair">
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={signOut} title="Sair">
                 <LogOut className="h-3.5 w-3.5" />
+                <span className="text-xs">Sair</span>
               </Button>
             </div>
           </div>
