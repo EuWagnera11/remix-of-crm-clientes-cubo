@@ -14,7 +14,7 @@ import {
   Search, Eye, ChevronRight, Users, BarChart3,
   LayoutDashboard, ChevronLeft, Plus, Upload,
   Calendar, DollarSign, TrendingUp, Wifi, WifiOff, History,
-  Edit, CheckCircle, XCircle, Loader2,
+  Edit, CheckCircle, XCircle, Loader2, Ban, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -145,7 +145,25 @@ export default function AdminDashboard() {
     },
   });
 
-  // ===== Computed =====
+  const banClinicMutation = useMutation({
+    mutationFn: async ({ clinic_id, ban }: { clinic_id: string; ban: boolean }) => {
+      const { data, error } = await supabase.functions.invoke("manage-team", {
+        body: { action: ban ? "ban_clinic" : "unban_clinic", clinic_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
+      toast.success(vars.ban
+        ? `Clínica bloqueada! ${data.banned_count} usuário(s) banido(s).`
+        : `Clínica desbloqueada! ${data.unbanned_count} usuário(s) reativado(s).`
+      );
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const activeClinics = clinics.filter(c => c.status === "ativa").length;
   const canceladas = clinics.filter(c => c.status === "cancelada").length;
   const totalLeads = allPatients.length;
@@ -379,6 +397,19 @@ export default function AdminDashboard() {
                         <div className="flex gap-1">
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingClinic(c)}><Edit className="h-3.5 w-3.5" /></Button>
                           <Button size="sm" variant="outline" className="h-7 text-xs" asChild><Link to={`/admin/clinic/${c.id}`}><Eye className="mr-1 h-3 w-3" />Ver</Link></Button>
+                          {c.status === "ativa" ? (
+                            <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                              disabled={banClinicMutation.isPending}
+                              onClick={() => { if (confirm(`Bloquear todos os logins da clínica "${c.name}"?`)) banClinicMutation.mutate({ clinic_id: c.id, ban: true }); }}>
+                              <Ban className="mr-1 h-3 w-3" />Bloquear
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="ghost" className="h-7 text-xs text-primary hover:bg-primary/10"
+                              disabled={banClinicMutation.isPending}
+                              onClick={() => banClinicMutation.mutate({ clinic_id: c.id, ban: false })}>
+                              <ShieldCheck className="mr-1 h-3 w-3" />Reativar
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
