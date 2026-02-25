@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Upload, RotateCcw, Palette, WifiOff, Plus, Trash2, UserPlus, Users } from "lucide-react";
+import { Upload, RotateCcw, Palette, WifiOff, Plus, Trash2, UserPlus, Users, Shield, FileText } from "lucide-react";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +33,152 @@ const ROLE_LABELS: Record<string, string> = {
   clinic_staff: "Profissional",
   clinic_receptionist: "Recepcionista",
 };
+
+function LgpdTab({ clinicId }: { clinicId: string }) {
+  const queryClient = useQueryClient();
+  const [termContent, setTermContent] = useState("");
+  const [termTitle, setTermTitle] = useState("Termo de Consentimento");
+
+  const { data: terms = [], isLoading } = useQuery({
+    queryKey: ["consent-terms", clinicId],
+    queryFn: async () => {
+      if (!clinicId) return [];
+      const { data } = await supabase
+        .from("consent_terms")
+        .select("*")
+        .eq("clinic_id", clinicId)
+        .order("version", { ascending: false });
+      return data || [];
+    },
+    enabled: !!clinicId,
+  });
+
+  const activeTerm = terms.find((t: any) => t.active);
+
+  useEffect(() => {
+    if (activeTerm) {
+      setTermContent(activeTerm.content);
+      setTermTitle(activeTerm.title);
+    }
+  }, [activeTerm]);
+
+  const { data: consents = [] } = useQuery({
+    queryKey: ["patient-consents", clinicId],
+    queryFn: async () => {
+      if (!clinicId) return [];
+      const { data } = await supabase
+        .from("patient_consents")
+        .select("*, patients(name)")
+        .eq("clinic_id", clinicId)
+        .order("consented_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!clinicId,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!clinicId) throw new Error("Sem clínica");
+      // Deactivate old terms
+      if (activeTerm) {
+        await supabase.from("consent_terms").update({ active: false }).eq("clinic_id", clinicId);
+      }
+      const nextVersion = (terms[0]?.version || 0) + 1;
+      const { error } = await supabase.from("consent_terms").insert({
+        clinic_id: clinicId,
+        title: termTitle,
+        content: termContent,
+        version: nextVersion,
+        active: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["consent-terms"] });
+      toast({ title: "Termo salvo com sucesso!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  if (!clinicId) return <Card><CardContent className="py-8 text-center text-muted-foreground">Selecione uma clínica.</CardContent></Card>;
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm">Termos de Consentimento LGPD</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Título do Termo</Label>
+            <Input value={termTitle} onChange={e => setTermTitle(e.target.value)} placeholder="Ex: Termo de Consentimento para Tratamento" />
+          </div>
+          <div>
+            <Label>Conteúdo do Termo</Label>
+            <Textarea
+              value={termContent}
+              onChange={e => setTermContent(e.target.value)}
+              placeholder="Escreva aqui o texto do termo de consentimento que os pacientes deverão aceitar..."
+              className="min-h-[200px]"
+            />
+          </div>
+          {activeTerm && (
+            <p className="text-xs text-muted-foreground">Versão atual: v{activeTerm.version} — Salvar criará uma nova versão.</p>
+          )}
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !termContent.trim()}>
+            {saveMutation.isPending ? "Salvando..." : activeTerm ? "Salvar Nova Versão" : "Criar Termo"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm">Registros de Consentimento</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {consents.length === 0 ? (
+            <div className="py-8 text-center">
+              <FileText className="mx-auto h-10 w-10 text-muted-foreground/30" />
+              <p className="mt-3 text-muted-foreground">Nenhum consentimento registrado.</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">Os registros aparecerão aqui conforme pacientes aceitarem os termos.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Data</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {consents.map((c: any) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.patients?.name || "—"}</TableCell>
+                    <TableCell className="capitalize">{c.consent_type === "treatment" ? "Tratamento" : c.consent_type === "marketing" ? "Marketing" : "Compartilhamento"}</TableCell>
+                    <TableCell>
+                      <Badge variant={c.consented ? (c.revoked_at ? "destructive" : "default") : "secondary"}>
+                        {c.revoked_at ? "Revogado" : c.consented ? "Consentido" : "Recusado"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{new Date(c.consented_at).toLocaleDateString("pt-BR")}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
 
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useWhiteLabel();
@@ -409,12 +556,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="lgpd" className="mt-4 space-y-4">
-          <Card className="bg-card">
-            <CardHeader><CardTitle className="text-sm">LGPD - Consentimento</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Configure os termos de consentimento e políticas de privacidade da clínica.</p>
-            </CardContent>
-          </Card>
+          <LgpdTab clinicId={effectiveClinicId} />
         </TabsContent>
       </Tabs>
     </div>

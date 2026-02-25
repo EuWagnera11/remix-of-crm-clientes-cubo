@@ -272,6 +272,117 @@ export type Database = {
         }
         Relationships: []
       }
+      consent_terms: {
+        Row: {
+          active: boolean
+          clinic_id: string
+          content: string
+          created_at: string
+          id: string
+          title: string
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          clinic_id: string
+          content: string
+          created_at?: string
+          id?: string
+          title?: string
+          version?: number
+        }
+        Update: {
+          active?: boolean
+          clinic_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consent_terms_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_installments: {
+        Row: {
+          amount: number
+          budget_id: string
+          clinic_id: string
+          created_at: string
+          due_date: string
+          id: string
+          installment_number: number
+          notes: string | null
+          paid_at: string | null
+          patient_id: string
+          payment_method: string | null
+          status: string
+          total_installments: number
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          budget_id: string
+          clinic_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          installment_number?: number
+          notes?: string | null
+          paid_at?: string | null
+          patient_id: string
+          payment_method?: string | null
+          status?: string
+          total_installments?: number
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          budget_id?: string
+          clinic_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          installment_number?: number
+          notes?: string | null
+          paid_at?: string | null
+          patient_id?: string
+          payment_method?: string | null
+          status?: string
+          total_installments?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_installments_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_installments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_installments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nps_responses: {
         Row: {
           clinic_id: string
@@ -307,6 +418,64 @@ export type Database = {
           },
           {
             foreignKeyName: "nps_responses_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_consents: {
+        Row: {
+          clinic_id: string
+          consent_term_id: string | null
+          consent_type: string
+          consented: boolean
+          consented_at: string
+          id: string
+          ip_address: string | null
+          patient_id: string
+          revoked_at: string | null
+        }
+        Insert: {
+          clinic_id: string
+          consent_term_id?: string | null
+          consent_type?: string
+          consented?: boolean
+          consented_at?: string
+          id?: string
+          ip_address?: string | null
+          patient_id: string
+          revoked_at?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          consent_term_id?: string | null
+          consent_type?: string
+          consented?: boolean
+          consented_at?: string
+          id?: string
+          ip_address?: string | null
+          patient_id?: string
+          revoked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_consents_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_consents_consent_term_id_fkey"
+            columns: ["consent_term_id"]
+            isOneToOne: false
+            referencedRelation: "consent_terms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_consents_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
