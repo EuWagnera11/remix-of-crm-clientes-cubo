@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import cuboLogo from '@/assets/cubo-logo.png';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -114,8 +114,10 @@ export default function Login() {
 
       {/* Right Panel — Login Form */}
       <div className="relative flex flex-1 flex-col items-center justify-center bg-background px-6 py-12">
-        {/* Logo top-right */}
-        <img src={cuboLogo} alt="CUBO" className="absolute top-6 right-6 h-10 hidden lg:block" />
+        {/* Logo top-right — uses white-label logo from settings */}
+        {settings.logoUrl && (
+          <img src={settings.logoUrl} alt="Logo" className="absolute top-6 right-6 h-10 hidden lg:block rounded-xl" />
+        )}
         <div className="w-full max-w-[400px] space-y-8">
           {/* Mobile-only brand */}
           <div className="flex flex-col items-center gap-4 lg:hidden">
