@@ -62,6 +62,11 @@ export default function AppLayout() {
   const isMobile = useIsMobile();
   const location = useLocation();
   const currentPath = location.pathname;
+
+  // Close mobile menu on navigation
+  useEffect(() => {
+    if (isMobile) setMobileMenuOpen(false);
+  }, [currentPath, isMobile]);
   const breadcrumb = breadcrumbMap[currentPath] || currentPath.split("/").filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" / ");
   const { settings } = useWhiteLabel();
   const { user, roles, isPlatformAdmin, clinicId, impersonatedClinicId, clearImpersonation, signOut } = useAuth();
