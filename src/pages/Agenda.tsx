@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -103,6 +104,19 @@ export default function Agenda() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("appointments").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      const labels: Record<string, string> = { realizado: "Agendamento concluído!", confirmado: "Agendamento confirmado!", cancelado: "Agendamento cancelado.", "no-show": "Marcado como no-show." };
+      toast({ title: labels[status] || "Status atualizado!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -152,12 +166,30 @@ export default function Agenda() {
                 <th className="p-3 font-medium">Status</th>
               </tr></thead>
               <tbody>
-                {appointments.map((a: any) => (
+              {appointments.map((a: any) => (
                   <tr key={a.id} className="border-b border-border/50">
                     <td className="p-3 font-mono text-sm">{a.time?.slice(0, 5)}</td>
                     <td className="p-3 font-medium">{a.patients?.name || "—"}</td>
                     <td className="p-3 text-sm">{a.procedures?.name || "—"}</td>
-                    <td className="p-3"><Badge variant="outline" className={STATUS_COLORS[a.status || "agendado"]}>{a.status || "agendado"}</Badge></td>
+                    <td className="p-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="cursor-pointer">
+                            <Badge variant="outline" className={cn(STATUS_COLORS[a.status || "agendado"], "hover:opacity-80 transition-opacity")}>
+                              {a.status || "agendado"}
+                            </Badge>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {["agendado", "confirmado", "realizado", "cancelado", "no-show"].map(s => (
+                            <DropdownMenuItem key={s} disabled={a.status === s} onClick={() => updateStatusMutation.mutate({ id: a.id, status: s })}>
+                              <Badge variant="outline" className={cn(STATUS_COLORS[s], "mr-2")}>{s}</Badge>
+                              {s === "realizado" && <span className="text-xs text-muted-foreground ml-1">(concluir)</span>}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
                   </tr>
                 ))}
               </tbody>
