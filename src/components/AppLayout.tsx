@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Users, GitBranch, FileText, Package, Settings,
@@ -14,7 +14,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogOut, Eye } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
@@ -61,9 +61,19 @@ export default function AppLayout() {
   const currentPath = location.pathname;
   const breadcrumb = breadcrumbMap[currentPath] || currentPath.split("/").filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" / ");
   const { settings } = useWhiteLabel();
-  const { user, roles, isPlatformAdmin, impersonatedClinicId, clearImpersonation, signOut } = useAuth();
+  const { user, roles, isPlatformAdmin, clinicId, impersonatedClinicId, clearImpersonation, signOut } = useAuth();
+  const queryClient = useQueryClient();
+  const prevClinicIdRef = useRef<string | null>(clinicId ?? null);
   const userInitials = user?.email?.substring(0, 2).toUpperCase() || 'U';
   const userRole = roles[0]?.role;
+
+  // Clear React Query cache when clinic context changes
+  useEffect(() => {
+    if (clinicId !== prevClinicIdRef.current && clinicId !== null) {
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== 'impersonated-clinic' });
+      prevClinicIdRef.current = clinicId;
+    }
+  }, [clinicId, queryClient]);
 
   // Fetch impersonated clinic name
   const { data: impersonatedClinic } = useQuery({
