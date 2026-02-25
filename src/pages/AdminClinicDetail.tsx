@@ -1,5 +1,6 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,7 @@ interface ClinicData {
 export default function AdminClinicDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { impersonateClinic } = useAuth();
   const [clinic, setClinic] = useState<ClinicData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -82,6 +84,7 @@ export default function AdminClinicDetail() {
   const statusInfo = STATUS_MAP[clinic.status as keyof typeof STATUS_MAP] || STATUS_MAP.ativa;
 
   const handleImpersonate = () => {
+    if (clinic) impersonateClinic(clinic.id);
     navigate("/dashboard");
   };
 

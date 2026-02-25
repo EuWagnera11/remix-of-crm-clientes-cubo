@@ -13,7 +13,9 @@ import NotificationsDropdown from "@/components/NotificationsDropdown";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut } from "lucide-react";
+import { LogOut, Eye } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -59,9 +61,30 @@ export default function AppLayout() {
   const currentPath = location.pathname;
   const breadcrumb = breadcrumbMap[currentPath] || currentPath.split("/").filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" / ");
   const { settings } = useWhiteLabel();
-  const { user, roles, isPlatformAdmin, signOut } = useAuth();
+  const { user, roles, isPlatformAdmin, impersonatedClinicId, clearImpersonation, signOut } = useAuth();
   const userInitials = user?.email?.substring(0, 2).toUpperCase() || 'U';
   const userRole = roles[0]?.role;
+
+  // Fetch impersonated clinic name
+  const { data: impersonatedClinic } = useQuery({
+    queryKey: ["impersonated-clinic", impersonatedClinicId],
+    queryFn: async () => {
+      if (!impersonatedClinicId) return null;
+      const { data } = await supabase.from("clinics").select("name").eq("id", impersonatedClinicId).single();
+      return data;
+    },
+    enabled: !!impersonatedClinicId,
+  });
+
+  const ImpersonationBanner = () => (
+    <div className="flex h-10 items-center justify-center gap-4 bg-primary text-sm font-medium text-primary-foreground">
+      <Eye className="h-4 w-4" />
+      Visualizando como: {impersonatedClinic?.name || "Clínica"}
+      <Button size="sm" variant="secondary" className="h-6 text-xs" onClick={() => clearImpersonation()}>
+        Sair da visualização
+      </Button>
+    </div>
+  );
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -208,6 +231,10 @@ export default function AppLayout() {
 
       {/* Main */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Impersonation Banner */}
+        {isPlatformAdmin && impersonatedClinicId && (
+          <ImpersonationBanner />
+        )}
         {/* Header */}
         <header className="flex h-16 items-center justify-between border-b border-border/60 bg-card/50 backdrop-blur-sm px-8">
           <div className="flex items-center gap-2">

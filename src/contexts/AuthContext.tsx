@@ -16,6 +16,9 @@ interface AuthContextType {
   loading: boolean;
   isPlatformAdmin: boolean;
   clinicId: string | null;
+  impersonatedClinicId: string | null;
+  impersonateClinic: (clinicId: string) => void;
+  clearImpersonation: () => void;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -27,6 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [impersonatedClinicId, setImpersonatedClinicId] = useState<string | null>(
+    () => localStorage.getItem('impersonated_clinic_id')
+  );
 
   const fetchRoles = async (userId: string) => {
     const { data } = await supabase
@@ -42,10 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Use setTimeout to avoid Supabase deadlock
           setTimeout(() => fetchRoles(session.user.id), 0);
         } else {
           setRoles([]);
+          setImpersonatedClinicId(null);
+          localStorage.removeItem('impersonated_clinic_id');
         }
         setLoading(false);
       }
@@ -64,7 +71,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isPlatformAdmin = roles.some(r => r.role === 'platform_admin');
-  const clinicId = roles.find(r => r.clinic_id)?.clinic_id ?? null;
+  const naturalClinicId = roles.find(r => r.clinic_id)?.clinic_id ?? null;
+  
+  // If platform_admin is impersonating a clinic, use that; otherwise use natural clinic_id
+  const clinicId = (isPlatformAdmin && impersonatedClinicId) ? impersonatedClinicId : naturalClinicId;
+
+  const impersonateClinic = (id: string) => {
+    setImpersonatedClinicId(id);
+    localStorage.setItem('impersonated_clinic_id', id);
+  };
+
+  const clearImpersonation = () => {
+    setImpersonatedClinicId(null);
+    localStorage.removeItem('impersonated_clinic_id');
+  };
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -74,10 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setRoles([]);
+    setImpersonatedClinicId(null);
+    localStorage.removeItem('impersonated_clinic_id');
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, roles, loading, isPlatformAdmin, clinicId, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, user, roles, loading, isPlatformAdmin, clinicId, impersonatedClinicId, impersonateClinic, clearImpersonation, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
