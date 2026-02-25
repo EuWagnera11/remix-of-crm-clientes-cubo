@@ -24,6 +24,7 @@ export type Database = {
           notes: string | null
           patient_id: string
           procedure_id: string | null
+          professional_name: string | null
           status: string | null
           time: string
         }
@@ -36,6 +37,7 @@ export type Database = {
           notes?: string | null
           patient_id: string
           procedure_id?: string | null
+          professional_name?: string | null
           status?: string | null
           time: string
         }
@@ -48,6 +50,7 @@ export type Database = {
           notes?: string | null
           patient_id?: string
           procedure_id?: string | null
+          professional_name?: string | null
           status?: string | null
           time?: string
         }
@@ -71,6 +74,53 @@ export type Database = {
             columns: ["procedure_id"]
             isOneToOne: false
             referencedRelation: "procedures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          clinic_id: string | null
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          clinic_id?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          clinic_id?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
             referencedColumns: ["id"]
           },
         ]
@@ -535,7 +585,11 @@ export type Database = {
           phone: string | null
           source: string | null
           stage: string | null
+          tags: string[] | null
           updated_at: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           birth_date?: string | null
@@ -550,7 +604,11 @@ export type Database = {
           phone?: string | null
           source?: string | null
           stage?: string | null
+          tags?: string[] | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           birth_date?: string | null
@@ -565,7 +623,11 @@ export type Database = {
           phone?: string | null
           source?: string | null
           stage?: string | null
+          tags?: string[] | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: [
           {
@@ -573,6 +635,54 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_procedure_templates: {
+        Row: {
+          active: boolean
+          clinic_id: string
+          created_at: string
+          delay_hours: number
+          id: string
+          message_template: string
+          name: string
+          procedure_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          clinic_id: string
+          created_at?: string
+          delay_hours?: number
+          id?: string
+          message_template: string
+          name: string
+          procedure_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          clinic_id?: string
+          created_at?: string
+          delay_hours?: number
+          id?: string
+          message_template?: string
+          name?: string
+          procedure_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_procedure_templates_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_procedure_templates_procedure_id_fkey"
+            columns: ["procedure_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
             referencedColumns: ["id"]
           },
         ]
@@ -614,6 +724,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "procedures_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revenue_goals: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          id: string
+          period: string
+          professional_name: string | null
+          target_amount: number
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          id?: string
+          period: string
+          professional_name?: string | null
+          target_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          period?: string
+          professional_name?: string | null
+          target_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_goals_clinic_id_fkey"
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"

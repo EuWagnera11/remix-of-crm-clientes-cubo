@@ -31,7 +31,7 @@ export default function Agenda() {
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ patient_id: "", procedure_id: "", date: "", time: "", duration_minutes: "60", notes: "" });
+  const [form, setForm] = useState({ patient_id: "", procedure_id: "", date: "", time: "", duration_minutes: "60", notes: "", professional_name: "" });
   const [selectedClinicId, setSelectedClinicId] = useState("");
   const effectiveClinicId = clinicId || selectedClinicId;
 
@@ -59,6 +59,19 @@ export default function Agenda() {
       const { data } = await q;
       return data || [];
     },
+  });
+
+  // Fetch team members for professional dropdown
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ["team-for-agenda", effectiveClinicId],
+    queryFn: async () => {
+      if (!effectiveClinicId) return [];
+      const { data } = await supabase.functions.invoke("manage-team", {
+        body: { action: "list", clinic_id: effectiveClinicId },
+      });
+      return data?.users?.filter((u: any) => u.role === "clinic_staff" || u.role === "clinic_owner") || [];
+    },
+    enabled: !!effectiveClinicId,
   });
 
   const dateStr = currentDate.toISOString().split("T")[0];
@@ -92,13 +105,14 @@ export default function Agenda() {
         time: form.time,
         duration_minutes: parseInt(form.duration_minutes) || 60,
         notes: form.notes || null,
+        professional_name: form.professional_name || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       setShowForm(false);
-      setForm({ patient_id: "", procedure_id: "", date: "", time: "", duration_minutes: "60", notes: "" });
+      setForm({ patient_id: "", procedure_id: "", date: "", time: "", duration_minutes: "60", notes: "", professional_name: "" });
       toast({ title: "Agendamento criado!" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -119,9 +133,9 @@ export default function Agenda() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Agenda</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {isPlatformAdmin && !clinicId && (
             <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
               <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
@@ -132,7 +146,7 @@ export default function Agenda() {
             {(["day", "week", "month"] as const).map((m) => (
               <button key={m} onClick={() => setViewMode(m)}
                 className={cn("px-3 py-1.5 text-xs transition-colors", viewMode === m ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground")}>
-                {m === "day" ? "Dia" : m === "week" ? "Semana" : "Mes"}
+                {m === "day" ? "Dia" : m === "week" ? "Semana" : "Mês"}
               </button>
             ))}
           </div>
@@ -157,12 +171,13 @@ export default function Agenda() {
         </Card>
       ) : (
         <Card>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <table className="w-full">
               <thead><tr className="border-b border-border text-left text-sm text-muted-foreground">
                 <th className="p-3 font-medium">Horário</th>
                 <th className="p-3 font-medium">Paciente</th>
-                <th className="p-3 font-medium">Procedimento</th>
+                <th className="p-3 font-medium hidden md:table-cell">Procedimento</th>
+                <th className="p-3 font-medium hidden lg:table-cell">Profissional</th>
                 <th className="p-3 font-medium">Status</th>
               </tr></thead>
               <tbody>
@@ -170,7 +185,8 @@ export default function Agenda() {
                   <tr key={a.id} className="border-b border-border/50">
                     <td className="p-3 font-mono text-sm">{a.time?.slice(0, 5)}</td>
                     <td className="p-3 font-medium">{a.patients?.name || "—"}</td>
-                    <td className="p-3 text-sm">{a.procedures?.name || "—"}</td>
+                    <td className="p-3 text-sm hidden md:table-cell">{a.procedures?.name || "—"}</td>
+                    <td className="p-3 text-sm hidden lg:table-cell">{a.professional_name || "—"}</td>
                     <td className="p-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -213,6 +229,14 @@ export default function Agenda() {
               <Select value={form.procedure_id} onValueChange={v => setForm(f => ({ ...f, procedure_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar (opcional)" /></SelectTrigger>
                 <SelectContent>{procedures.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label>Profissional</Label>
+              <Select value={form.professional_name} onValueChange={v => setForm(f => ({ ...f, professional_name: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecionar (opcional)" /></SelectTrigger>
+                <SelectContent>
+                  {teamMembers.map((m: any) => <SelectItem key={m.id} value={m.email}>{m.email}</SelectItem>)}
+                </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
