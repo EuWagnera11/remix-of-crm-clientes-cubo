@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface WhiteLabelSettings {
   clinicName: string;
@@ -53,6 +55,36 @@ function applyFavicon(url: string | null) {
 
 export function WhiteLabelProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<WhiteLabelSettings>(loadSettings);
+  const { clinicId, isPlatformAdmin } = useAuth();
+
+  // When impersonating a clinic, update sidebar name/color from database
+  useEffect(() => {
+    if (!clinicId) {
+      // Reset to defaults when no clinic is selected
+      if (isPlatformAdmin) {
+        setSettings(DEFAULT_SETTINGS);
+        return;
+      }
+      return;
+    }
+
+    const fetchClinic = async () => {
+      const { data } = await supabase
+        .from("clinics")
+        .select("name, primary_color, logo_url")
+        .eq("id", clinicId)
+        .single();
+      if (data) {
+        const updates: Partial<WhiteLabelSettings> = {
+          clinicName: data.name,
+          primaryColor: data.primary_color || DEFAULT_SETTINGS.primaryColor,
+          logoUrl: data.logo_url || null,
+        };
+        setSettings(prev => ({ ...prev, ...updates }));
+      }
+    };
+    fetchClinic();
+  }, [clinicId, isPlatformAdmin]);
 
   useEffect(() => {
     applyPrimaryColor(settings.primaryColor);
