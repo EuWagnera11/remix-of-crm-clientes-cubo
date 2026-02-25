@@ -8,6 +8,9 @@ import {
   Building2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 function StatCard({
   title, value, icon: Icon,
@@ -32,6 +35,53 @@ function StatCard({
 }
 
 export default function Dashboard() {
+  const { clinicId } = useAuth();
+
+  const now = new Date();
+  const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+  const { data: patientsCount = 0 } = useQuery({
+    queryKey: ["dashboard-patients", clinicId, startOfMonth],
+    queryFn: async () => {
+      if (!clinicId) return 0;
+      const { count } = await supabase.from("patients").select("id", { count: "exact", head: true })
+        .eq("clinic_id", clinicId).gte("created_at", startOfMonth);
+      return count || 0;
+    },
+    enabled: !!clinicId,
+  });
+
+  const { data: appointmentsCount = 0 } = useQuery({
+    queryKey: ["dashboard-appointments", clinicId, startOfMonth],
+    queryFn: async () => {
+      if (!clinicId) return 0;
+      const { count } = await supabase.from("appointments").select("id", { count: "exact", head: true })
+        .eq("clinic_id", clinicId).gte("date", startOfMonth);
+      return count || 0;
+    },
+    enabled: !!clinicId,
+  });
+
+  const { data: budgetsData } = useQuery({
+    queryKey: ["dashboard-budgets", clinicId, startOfMonth],
+    queryFn: async () => {
+      if (!clinicId) return { count: 0, total: 0, approved: 0 };
+      const { data } = await supabase.from("budgets").select("id, total, status")
+        .eq("clinic_id", clinicId).gte("created_at", startOfMonth);
+      const items = data || [];
+      const approved = items.filter(b => b.status === "aprovado");
+      const total = approved.reduce((sum, b) => sum + Number(b.total || 0), 0);
+      return { count: items.length, total, approved: approved.length };
+    },
+    enabled: !!clinicId,
+  });
+
+  const conversionRate = budgetsData && budgetsData.count > 0
+    ? Math.round((budgetsData.approved / budgetsData.count) * 100)
+    : 0;
+
+  const hasData = clinicId && (patientsCount > 0 || appointmentsCount > 0 || (budgetsData?.count || 0) > 0);
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -43,24 +93,27 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard title="Leads este mes" value="—" icon={Users} />
-        <StatCard title="Agendamentos" value="—" icon={CalendarCheck} />
-        <StatCard title="Orcamentos" value="—" icon={FileText} />
-        <StatCard title="Faturamento" value="—" icon={DollarSign} />
-        <StatCard title="Conversao" value="—" icon={Percent} />
+        <StatCard title="Leads este mes" value={clinicId ? String(patientsCount) : "—"} icon={Users} />
+        <StatCard title="Agendamentos" value={clinicId ? String(appointmentsCount) : "—"} icon={CalendarCheck} />
+        <StatCard title="Orcamentos" value={clinicId ? String(budgetsData?.count || 0) : "—"} icon={FileText} />
+        <StatCard title="Faturamento" value={clinicId ? `R$ ${(budgetsData?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"} icon={DollarSign} />
+        <StatCard title="Conversao" value={clinicId ? `${conversionRate}%` : "—"} icon={Percent} />
         <StatCard title="Resp. media" value="—" icon={Clock} />
       </div>
 
-      {/* Empty state */}
-      <Card>
-        <CardContent className="py-16 text-center">
-          <Building2 className="mx-auto h-12 w-12 text-muted-foreground/30" />
-          <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhum dado disponivel ainda</p>
-          <p className="mt-1 text-sm text-muted-foreground/70">
-            Os dados aparecerão aqui conforme leads, agendamentos e orcamentos forem registrados.
-          </p>
-        </CardContent>
-      </Card>
+      {!hasData && (
+        <Card>
+          <CardContent className="py-16 text-center">
+            <Building2 className="mx-auto h-12 w-12 text-muted-foreground/30" />
+            <p className="mt-4 text-lg font-medium text-muted-foreground">
+              {clinicId ? "Nenhum dado disponivel ainda" : "Selecione uma clinica pelo painel admin"}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground/70">
+              {clinicId ? "Os dados aparecerão aqui conforme leads, agendamentos e orcamentos forem registrados." : "Acesse uma clinica para ver os dados do CRM."}
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
