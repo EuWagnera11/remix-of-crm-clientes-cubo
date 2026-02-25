@@ -581,17 +581,36 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast({ title: "Arquivo inválido", description: "Selecione uma imagem", variant: "destructive" }); return; }
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      updateSettings({ [field]: dataUrl });
-      // Persist logo to database
-      if (field === "logoUrl" && effectiveClinicId) {
-        await supabase.from("clinics").update({ logo_url: dataUrl }).eq("id", effectiveClinicId);
+    
+    if (field === "logoUrl" && effectiveClinicId) {
+      // Upload to Storage bucket
+      const fileExt = file.name.split('.').pop();
+      const filePath = `logos/${effectiveClinicId}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("clinic-assets")
+        .upload(filePath, file, { upsert: true });
+      
+      if (uploadError) {
+        toast({ title: "Erro no upload", description: uploadError.message, variant: "destructive" });
+        return;
       }
-      toast({ title: "Imagem atualizada!" });
-    };
-    reader.readAsDataURL(file);
+      
+      const { data: urlData } = supabase.storage.from("clinic-assets").getPublicUrl(filePath);
+      const publicUrl = urlData.publicUrl + `?t=${Date.now()}`; // cache bust
+      
+      await supabase.from("clinics").update({ logo_url: publicUrl }).eq("id", effectiveClinicId);
+      updateSettings({ [field]: publicUrl });
+      toast({ title: "Logo atualizada!" });
+    } else {
+      // Favicon: keep as base64 (small file, browser-only)
+      const reader = new FileReader();
+      reader.onload = () => {
+        updateSettings({ [field]: reader.result as string });
+        toast({ title: "Imagem atualizada!" });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
