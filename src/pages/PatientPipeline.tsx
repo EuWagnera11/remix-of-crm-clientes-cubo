@@ -13,8 +13,12 @@ const STAGES = [
   { key: "contacted", label: "Contatado", color: "bg-yellow-500" },
   { key: "scheduled", label: "Agendado", color: "bg-primary" },
   { key: "in_treatment", label: "Em Tratamento", color: "bg-green-500" },
-  { key: "completed", label: "Concluido", color: "bg-emerald-500" },
+  { key: "em_tratamento", label: "Em Tratamento", color: "bg-green-500" },
+  { key: "paciente_ativo", label: "Paciente Ativo", color: "bg-emerald-500" },
+  { key: "vip", label: "VIP", color: "bg-amber-500" },
+  { key: "completed", label: "Concluído", color: "bg-emerald-500" },
   { key: "lost", label: "Perdido", color: "bg-destructive" },
+  { key: "inativo", label: "Inativo", color: "bg-muted-foreground" },
 ];
 
 export default function PatientPipeline() {

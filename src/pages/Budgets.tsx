@@ -34,7 +34,7 @@ export default function Budgets() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ patient_id: "", total: "", discount: "0", payment_method: "", installments: "1", notes: "" });
+  const [form, setForm] = useState({ patient_id: "", procedure_id: "", total: "", discount: "0", payment_method: "", installments: "1", notes: "" });
   const [selectedClinicId, setSelectedClinicId] = useState("");
   const effectiveClinicId = clinicId || selectedClinicId;
 
@@ -54,6 +54,16 @@ export default function Budgets() {
     },
   });
 
+  const { data: procedures = [] } = useQuery({
+    queryKey: ["procedures-select", effectiveClinicId],
+    queryFn: async () => {
+      let q = supabase.from("procedures").select("id, name, price").eq("active", true);
+      if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
+      const { data } = await q;
+      return data || [];
+    },
+  });
+
   const { data: budgets = [] } = useQuery({
     queryKey: ["budgets", effectiveClinicId],
     queryFn: async () => {
@@ -63,6 +73,15 @@ export default function Budgets() {
       return data || [];
     },
   });
+
+  const handleProcedureChange = (procedureId: string) => {
+    const proc = procedures.find((p: any) => p.id === procedureId);
+    setForm(f => ({
+      ...f,
+      procedure_id: procedureId,
+      total: proc ? String(proc.price) : f.total,
+    }));
+  };
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -81,7 +100,7 @@ export default function Budgets() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
       setShowForm(false);
-      setForm({ patient_id: "", total: "", discount: "0", payment_method: "", installments: "1", notes: "" });
+      setForm({ patient_id: "", procedure_id: "", total: "", discount: "0", payment_method: "", installments: "1", notes: "" });
       toast({ title: "Orçamento criado!" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -93,7 +112,7 @@ export default function Budgets() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold">Orçamentos</h1>
         <div className="flex gap-2">
           {isPlatformAdmin && !clinicId && (
@@ -125,25 +144,25 @@ export default function Budgets() {
         </Card>
       ) : (
         <Card>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <table className="w-full">
               <thead><tr className="border-b border-border text-left text-sm text-muted-foreground">
                 <th className="p-3 font-medium">Paciente</th>
                 <th className="p-3 font-medium">Valor</th>
-                <th className="p-3 font-medium">Desconto</th>
-                <th className="p-3 font-medium">Pagamento</th>
+                <th className="p-3 font-medium hidden sm:table-cell">Desconto</th>
+                <th className="p-3 font-medium hidden md:table-cell">Pagamento</th>
                 <th className="p-3 font-medium">Status</th>
-                <th className="p-3 font-medium">Data</th>
+                <th className="p-3 font-medium hidden sm:table-cell">Data</th>
               </tr></thead>
               <tbody>
                 {filtered.map((b: any) => (
                   <tr key={b.id} className="border-b border-border/50">
                     <td className="p-3 font-medium">{b.patients?.name || "—"}</td>
-                    <td className="p-3 text-sm">R$ {Number(b.total || 0).toFixed(2)}</td>
-                    <td className="p-3 text-sm">R$ {Number(b.discount || 0).toFixed(2)}</td>
-                    <td className="p-3 text-sm capitalize">{b.payment_method || "—"}</td>
+                    <td className="p-3 text-sm">R$ {Number(b.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                    <td className="p-3 text-sm hidden sm:table-cell">R$ {Number(b.discount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                    <td className="p-3 text-sm capitalize hidden md:table-cell">{b.payment_method || "—"}</td>
                     <td className="p-3"><Badge variant="outline" className={STATUS_COLORS[b.status || "pendente"]}>{STATUS_LABELS[b.status || "pendente"]}</Badge></td>
-                    <td className="p-3 text-sm text-muted-foreground">{new Date(b.created_at).toLocaleDateString("pt-BR")}</td>
+                    <td className="p-3 text-sm text-muted-foreground hidden sm:table-cell">{new Date(b.created_at).toLocaleDateString("pt-BR")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -153,7 +172,7 @@ export default function Budgets() {
       )}
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Novo Orçamento</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>Paciente *</Label>
@@ -162,6 +181,19 @@ export default function Budgets() {
                 <SelectContent>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
               </Select>
               {patients.length === 0 && <p className="text-xs text-muted-foreground mt-1">Cadastre um paciente primeiro.</p>}
+            </div>
+            <div><Label>Procedimento</Label>
+              <Select value={form.procedure_id} onValueChange={handleProcedureChange}>
+                <SelectTrigger><SelectValue placeholder="Selecionar procedimento (opcional)" /></SelectTrigger>
+                <SelectContent>
+                  {procedures.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} — R$ {Number(p.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {procedures.length === 0 && <p className="text-xs text-muted-foreground mt-1">Cadastre procedimentos primeiro.</p>}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Valor Total (R$) *</Label><Input type="number" value={form.total} onChange={e => setForm(f => ({ ...f, total: e.target.value }))} placeholder="0.00" /></div>

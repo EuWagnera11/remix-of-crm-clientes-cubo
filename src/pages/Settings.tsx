@@ -577,12 +577,20 @@ export default function SettingsPage() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: "logoUrl" | "faviconUrl") => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: "logoUrl" | "faviconUrl") => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast({ title: "Arquivo inválido", description: "Selecione uma imagem", variant: "destructive" }); return; }
     const reader = new FileReader();
-    reader.onload = () => { updateSettings({ [field]: reader.result as string }); toast({ title: "Imagem atualizada!" }); };
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      updateSettings({ [field]: dataUrl });
+      // Persist logo to database
+      if (field === "logoUrl" && effectiveClinicId) {
+        await supabase.from("clinics").update({ logo_url: dataUrl }).eq("id", effectiveClinicId);
+      }
+      toast({ title: "Imagem atualizada!" });
+    };
     reader.readAsDataURL(file);
   };
 
