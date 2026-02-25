@@ -47,8 +47,13 @@ export default function GlobalSearch() {
         setOpen(prev => !prev);
       }
     };
+    const openHandler = () => setOpen(true);
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    document.addEventListener("open-global-search", openHandler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.removeEventListener("open-global-search", openHandler);
+    };
   }, []);
 
   // Search

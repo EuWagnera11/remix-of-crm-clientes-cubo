@@ -272,13 +272,13 @@ export default function AppLayout() {
           </div>
           <div className="flex items-center gap-2 md:gap-4">
             <Button variant="outline" size="sm" className="h-8 gap-2 text-muted-foreground text-xs hidden sm:flex"
-              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}>
+              onClick={() => document.dispatchEvent(new CustomEvent("open-global-search"))}>
               <Search className="h-3.5 w-3.5" />
               Buscar...
               <kbd className="hidden md:inline-flex h-5 items-center rounded border border-border bg-muted px-1 font-mono text-[10px]">⌘K</kbd>
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 sm:hidden"
-              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}>
+              onClick={() => document.dispatchEvent(new CustomEvent("open-global-search"))}>
               <Search className="h-4 w-4" />
             </Button>
             <ThemeToggle />
