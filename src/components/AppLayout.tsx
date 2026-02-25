@@ -3,19 +3,20 @@ import { Outlet, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Users, GitBranch, FileText, Package, Settings,
   ChevronLeft, ChevronRight, Search, MessageSquare, Calendar,
-  DollarSign, BarChart3, ChevronDown, Star, Zap,
+  DollarSign, BarChart3, ChevronDown, Star, Zap, Menu, X,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import ThemeToggle from "@/components/ThemeToggle";
+import GlobalSearch from "@/components/GlobalSearch";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogOut, Eye } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -56,7 +57,9 @@ const breadcrumbMap: Record<string, string> = {
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pipelineOpen, setPipelineOpen] = useState(true);
+  const isMobile = useIsMobile();
   const location = useLocation();
   const currentPath = location.pathname;
   const breadcrumb = breadcrumbMap[currentPath] || currentPath.split("/").filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" / ");
@@ -98,11 +101,18 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
+      {/* Mobile overlay */}
+      {isMobile && mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+      )}
+
       {/* Sidebar */}
       <aside
         className={cn(
           "flex flex-col border-r border-border/60 bg-sidebar transition-all duration-300 ease-in-out",
-          collapsed ? "w-[68px]" : "w-[260px]"
+          isMobile
+            ? cn("fixed inset-y-0 left-0 z-50 w-[260px] transform", mobileMenuOpen ? "translate-x-0" : "-translate-x-full")
+            : collapsed ? "w-[68px]" : "w-[260px]"
         )}
       >
         {/* Logo */}
@@ -246,22 +256,30 @@ export default function AppLayout() {
           <ImpersonationBanner />
         )}
         {/* Header */}
-        <header className="flex h-16 items-center justify-between border-b border-border/60 bg-card/50 backdrop-blur-sm px-8">
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] text-muted-foreground font-medium">{breadcrumb}</span>
+        <header className="flex h-14 md:h-16 items-center justify-between border-b border-border/60 bg-card/50 backdrop-blur-sm px-4 md:px-8">
+          <div className="flex items-center gap-3">
+            {isMobile && (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            )}
+            <span className="text-[13px] text-muted-foreground font-medium hidden sm:block">{breadcrumb}</span>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-              <Input
-                placeholder="Buscar..."
-                className="h-9 w-60 rounded-lg border-border/60 bg-background/60 pl-9 text-[13px] placeholder:text-muted-foreground/40 focus:bg-background"
-              />
-            </div>
+          <div className="flex items-center gap-2 md:gap-4">
+            <Button variant="outline" size="sm" className="h-8 gap-2 text-muted-foreground text-xs hidden sm:flex"
+              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}>
+              <Search className="h-3.5 w-3.5" />
+              Buscar...
+              <kbd className="hidden md:inline-flex h-5 items-center rounded border border-border bg-muted px-1 font-mono text-[10px]">⌘K</kbd>
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 sm:hidden"
+              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}>
+              <Search className="h-4 w-4" />
+            </Button>
             <ThemeToggle />
             <NotificationsDropdown />
-            <div className="h-6 w-px bg-border/50" />
-            <div className="flex items-center gap-3">
+            <div className="hidden md:block h-6 w-px bg-border/50" />
+            <div className="hidden md:flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                 {userInitials}
               </div>
@@ -269,21 +287,24 @@ export default function AppLayout() {
                 <span className="text-[13px] font-medium leading-tight">{user?.email?.split('@')[0]}</span>
                 <span className="text-[10px] text-muted-foreground capitalize">{userRole?.replace('_', ' ') || 'Usuário'}</span>
               </div>
-              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={signOut} title="Sair">
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="text-xs">Sair</span>
-              </Button>
             </div>
+            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={signOut} title="Sair">
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="text-xs hidden md:inline">Sair</span>
+            </Button>
           </div>
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="animate-fade-in">
             <Outlet />
           </div>
         </main>
       </div>
+
+      {/* Global Search */}
+      <GlobalSearch />
     </div>
   );
 }
