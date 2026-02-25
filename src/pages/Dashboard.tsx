@@ -8,22 +8,29 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isPast, isToday, subMonths, startOfMonth } from "date-fns";
+import { format, subMonths, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
 
-function StatCard({ title, value, icon: Icon, trend }: { title: string; value: string; icon: React.ElementType; trend?: string }) {
+function StatCard({ title, value, icon: Icon, trend, accent }: {
+  title: string; value: string; icon: React.ElementType; trend?: string; accent?: boolean;
+}) {
   return (
-    <Card>
+    <Card className={`overflow-hidden transition-all duration-200 hover:luxury-shadow-lg ${accent ? 'border-primary/20 bg-primary/[0.03]' : ''}`}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
-            <p className="text-[12px] uppercase tracking-wider text-muted-foreground font-medium">{title}</p>
-            <p className="text-2xl font-bold tracking-tight">{value}</p>
-            {trend && <p className="text-xs text-muted-foreground">{trend}</p>}
+            <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/70 font-medium">{title}</p>
+            <p className="text-2xl font-display font-semibold tracking-tight">{value}</p>
+            {trend && (
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="h-3 w-3 text-success" />
+                <p className="text-[11px] text-success font-medium">{trend}</p>
+              </div>
+            )}
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/8">
-            <Icon className="h-5 w-5 text-primary" strokeWidth={1.8} />
+          <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${accent ? 'bg-primary/15' : 'bg-primary/8'}`}>
+            <Icon className="h-5 w-5 text-primary" strokeWidth={1.6} />
           </div>
         </div>
       </CardContent>
@@ -138,75 +145,86 @@ export default function Dashboard() {
   const hasData = clinicId && (patientsCount > 0 || appointmentsCount > 0 || (budgetsData?.count || 0) > 0);
 
   const STATUS_COLORS: Record<string, string> = {
-    agendado: "bg-blue-500/10 text-blue-500",
-    confirmado: "bg-green-500/10 text-green-500",
-    realizado: "bg-emerald-500/10 text-emerald-500",
-    cancelado: "bg-destructive/10 text-destructive",
-    "no-show": "bg-yellow-500/10 text-yellow-500",
+    agendado: "bg-info/10 text-info border-info/20",
+    confirmado: "bg-success/10 text-success border-success/20",
+    realizado: "bg-success/10 text-success border-success/20",
+    cancelado: "bg-destructive/10 text-destructive border-destructive/20",
+    "no-show": "bg-warning/10 text-warning border-warning/20",
   };
 
+  const currentMonth = format(now, "MMMM 'de' yyyy", { locale: ptBR });
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Visão geral da sua clínica</p>
+          <h1 className="text-3xl font-display font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground/70 mt-1 capitalize">{currentMonth}</p>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats Grid */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard title="Leads este mês" value={clinicId ? String(patientsCount) : "—"} icon={Users} trend={leadsTrend} />
+        <StatCard title="Leads" value={clinicId ? String(patientsCount) : "—"} icon={Users} trend={leadsTrend} />
         <StatCard title="Agendamentos" value={clinicId ? String(appointmentsCount) : "—"} icon={CalendarCheck} />
         <StatCard title="Orçamentos" value={clinicId ? String(budgetsData?.count || 0) : "—"} icon={FileText} />
-        <StatCard title="Faturamento" value={clinicId ? `R$ ${(budgetsData?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"} icon={DollarSign} />
+        <StatCard title="Faturamento" value={clinicId ? `R$ ${(budgetsData?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}` : "—"} icon={DollarSign} accent />
         <StatCard title="Conversão" value={clinicId ? `${conversionRate}%` : "—"} icon={Percent} />
-        <StatCard title="Hoje" value={clinicId ? `${todayAppointments.length} consultas` : "—"} icon={Clock} />
+        <StatCard title="Hoje" value={clinicId ? `${todayAppointments.length}` : "—"} icon={Clock} />
       </div>
 
+      {/* Empty State */}
       {!hasData && (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <Building2 className="mx-auto h-12 w-12 text-muted-foreground/30" />
-            <p className="mt-4 text-lg font-medium text-muted-foreground">
+        <Card className="border-dashed">
+          <CardContent className="py-20 text-center">
+            <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-muted/50">
+              <Building2 className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+            <p className="mt-5 text-lg font-display font-medium text-muted-foreground">
               {clinicId ? "Nenhum dado disponível ainda" : "Selecione uma clínica pelo painel admin"}
             </p>
-            <p className="mt-1 text-sm text-muted-foreground/70">
+            <p className="mt-2 text-sm text-muted-foreground/60 max-w-sm mx-auto">
               {clinicId ? "Os dados aparecerão aqui conforme leads, agendamentos e orçamentos forem registrados." : "Acesse uma clínica para ver os dados do CRM."}
             </p>
           </CardContent>
         </Card>
       )}
 
+      {/* Detail Cards */}
       {hasData && (
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-5 lg:grid-cols-3">
           {/* Today's Appointments */}
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Agendamentos de Hoje</CardTitle>
-                <Link to="/agenda"><Button variant="ghost" size="sm" className="h-7 text-xs gap-1">Ver agenda <ArrowRight className="h-3 w-3" /></Button></Link>
+                <CardTitle className="text-sm font-semibold">Agendamentos de Hoje</CardTitle>
+                <Link to="/agenda">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-primary hover:text-primary rounded-lg">
+                    Ver agenda <ArrowRight className="h-3 w-3" />
+                  </Button>
+                </Link>
               </div>
             </CardHeader>
             <CardContent>
               {todayAppointments.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">Nenhum agendamento hoje</p>
+                <p className="py-6 text-center text-sm text-muted-foreground/60">Nenhum agendamento hoje</p>
               ) : (
                 <div className="space-y-2">
                   {todayAppointments.slice(0, 5).map((a: any) => (
-                    <div key={a.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div key={a.id} className="flex items-center justify-between rounded-xl border border-border/60 p-3 transition-colors hover:bg-accent/40">
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-xs text-muted-foreground">{a.time?.slice(0, 5)}</span>
+                        <span className="font-mono text-xs text-primary/80 font-medium">{a.time?.slice(0, 5)}</span>
                         <div>
                           <p className="text-sm font-medium">{a.patients?.name}</p>
-                          <p className="text-xs text-muted-foreground">{a.procedures?.name || "Consulta"}</p>
+                          <p className="text-[11px] text-muted-foreground/60">{a.procedures?.name || "Consulta"}</p>
                         </div>
                       </div>
-                      <Badge variant="outline" className={STATUS_COLORS[a.status || "agendado"]}>{a.status || "agendado"}</Badge>
+                      <Badge variant="outline" className={`text-[10px] rounded-lg ${STATUS_COLORS[a.status || "agendado"]}`}>{a.status || "agendado"}</Badge>
                     </div>
                   ))}
                   {todayAppointments.length > 5 && (
-                    <p className="text-center text-xs text-muted-foreground">+{todayAppointments.length - 5} mais</p>
+                    <p className="text-center text-xs text-muted-foreground/50 pt-1">+{todayAppointments.length - 5} mais</p>
                   )}
                 </div>
               )}
@@ -214,26 +232,30 @@ export default function Dashboard() {
           </Card>
 
           {/* Overdue Installments */}
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm flex items-center gap-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   {overdueInstallments.length > 0 && <AlertTriangle className="h-4 w-4 text-destructive" />}
                   Parcelas Vencidas
                 </CardTitle>
-                <Link to="/financial"><Button variant="ghost" size="sm" className="h-7 text-xs gap-1">Financeiro <ArrowRight className="h-3 w-3" /></Button></Link>
+                <Link to="/financial">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-primary hover:text-primary rounded-lg">
+                    Financeiro <ArrowRight className="h-3 w-3" />
+                  </Button>
+                </Link>
               </div>
             </CardHeader>
             <CardContent>
               {overdueInstallments.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma parcela vencida 🎉</p>
+                <p className="py-6 text-center text-sm text-muted-foreground/60">Nenhuma parcela vencida 🎉</p>
               ) : (
                 <div className="space-y-2">
                   {overdueInstallments.map((inst: any) => (
-                    <div key={inst.id} className="flex items-center justify-between rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                    <div key={inst.id} className="flex items-center justify-between rounded-xl border border-destructive/15 bg-destructive/[0.03] p-3">
                       <div>
                         <p className="text-sm font-medium">{inst.patients?.name}</p>
-                        <p className="text-xs text-muted-foreground">Venceu em {format(new Date(inst.due_date), "dd/MM")}</p>
+                        <p className="text-[11px] text-muted-foreground/60">Venceu em {format(new Date(inst.due_date), "dd/MM")}</p>
                       </div>
                       <span className="text-sm font-semibold text-destructive">
                         R$ {Number(inst.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
@@ -246,25 +268,29 @@ export default function Dashboard() {
           </Card>
 
           {/* Pending Leads */}
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Leads Recentes</CardTitle>
-                <Link to="/patients"><Button variant="ghost" size="sm" className="h-7 text-xs gap-1">Ver todos <ArrowRight className="h-3 w-3" /></Button></Link>
+                <CardTitle className="text-sm font-semibold">Leads Recentes</CardTitle>
+                <Link to="/patients">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-primary hover:text-primary rounded-lg">
+                    Ver todos <ArrowRight className="h-3 w-3" />
+                  </Button>
+                </Link>
               </div>
             </CardHeader>
             <CardContent>
               {pendingLeads.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">Nenhum lead pendente</p>
+                <p className="py-6 text-center text-sm text-muted-foreground/60">Nenhum lead pendente</p>
               ) : (
                 <div className="space-y-2">
                   {pendingLeads.map((lead: any) => (
-                    <Link key={lead.id} to={`/patients/${lead.id}`} className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-accent/50 transition-colors">
+                    <Link key={lead.id} to={`/patients/${lead.id}`} className="flex items-center justify-between rounded-xl border border-border/60 p-3 hover:bg-accent/40 transition-colors">
                       <div>
                         <p className="text-sm font-medium">{lead.name}</p>
-                        <p className="text-xs text-muted-foreground">{lead.phone || "Sem telefone"}</p>
+                        <p className="text-[11px] text-muted-foreground/60">{lead.phone || "Sem telefone"}</p>
                       </div>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[11px] text-muted-foreground/50">
                         {format(new Date(lead.created_at), "dd/MM", { locale: ptBR })}
                       </span>
                     </Link>
