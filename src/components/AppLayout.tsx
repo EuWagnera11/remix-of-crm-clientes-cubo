@@ -25,7 +25,7 @@ const navItems = [
       { title: "Orcamentos", url: "/pipeline/budgets" },
     ],
   },
-  { title: "WhatsApp", url: "/whatsapp", icon: MessageSquare, badge: 3 },
+  { title: "WhatsApp", url: "/whatsapp", icon: MessageSquare },
   { title: "Agenda", url: "/agenda", icon: Calendar },
   { title: "Financeiro", url: "/financial", icon: DollarSign },
   { title: "Orcamentos", url: "/budgets", icon: FileText },
@@ -160,11 +160,6 @@ export default function AppLayout() {
                   {!collapsed && (
                     <>
                       <span className="flex-1">{item.title}</span>
-                      {item.badge && (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
-                          {item.badge}
-                        </span>
-                      )}
                     </>
                   )}
                 </NavLink>

@@ -40,16 +40,7 @@ const ICON_COLORS: Record<string, string> = {
   nps: "text-destructive",
 };
 
-const initialNotifications: Notification[] = [
-  { id: "1", type: "whatsapp", title: "Nova mensagem", description: "Carlos Eduardo enviou uma mensagem", time: "2 min", read: false },
-  { id: "2", type: "appointment", title: "Agendamento confirmado", description: "Ana Carolina confirmou consulta amanha", time: "15 min", read: false },
-  { id: "3", type: "appointment", title: "No-show", description: "Roberto Almeida nao compareceu", time: "1h", read: false },
-  { id: "4", type: "budget", title: "Orcamento aprovado", description: "Juliana aprovou orcamento de R$ 3.000", time: "2h", read: false },
-  { id: "5", type: "financial", title: "Parcela atrasada", description: "Lucas Ribeiro - parcela de R$ 1.880 vencida", time: "3h", read: true },
-  { id: "6", type: "lead", title: "Novo lead", description: "Novo contato via Instagram Ads", time: "4h", read: true },
-  { id: "7", type: "nps", title: "Detrator NPS", description: "Mariana Rocha deu nota 5", time: "5h", read: true },
-  { id: "8", type: "cadence", title: "Cadencia pendente", description: "Follow-up D+3 para 5 pacientes", time: "6h", read: true },
-];
+const initialNotifications: Notification[] = [];
 
 export default function NotificationsDropdown() {
   const [notifications, setNotifications] = useState(initialNotifications);
@@ -80,25 +71,32 @@ export default function NotificationsDropdown() {
           )}
         </div>
         <div className="max-h-80 overflow-y-auto">
-          {notifications.map(n => {
-            const Icon = ICONS[n.type] || Bell;
-            return (
-              <button key={n.id} onClick={() => markRead(n.id)}
-                className={cn("flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-accent", !n.read && "bg-primary/5")}>
-                <div className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted", ICON_COLORS[n.type])}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className={cn("text-sm", !n.read && "font-semibold")}>{n.title}</span>
-                    {!n.read && <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+          {notifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <Bell className="h-8 w-8 mb-2 opacity-30" />
+              <p className="text-sm">Nenhuma notificação</p>
+            </div>
+          ) : (
+            notifications.map(n => {
+              const Icon = ICONS[n.type] || Bell;
+              return (
+                <button key={n.id} onClick={() => markRead(n.id)}
+                  className={cn("flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-accent", !n.read && "bg-primary/5")}>
+                  <div className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted", ICON_COLORS[n.type])}>
+                    <Icon className="h-4 w-4" />
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{n.description}</p>
-                  <span className="text-[10px] text-muted-foreground">{n.time}</span>
-                </div>
-              </button>
-            );
-          })}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-sm", !n.read && "font-semibold")}>{n.title}</span>
+                      {!n.read && <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{n.description}</p>
+                    <span className="text-[10px] text-muted-foreground">{n.time}</span>
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
       </PopoverContent>
     </Popover>
