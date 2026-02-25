@@ -65,7 +65,7 @@ export default function Automations() {
       queryClient.invalidateQueries({ queryKey: ["automations"] });
       setShowForm(false);
       setForm({ name: "", type: "whatsapp", trigger_event: "", delay_days: "0", message_template: "" });
-      toast({ title: "Automacao criada!" });
+      toast({ title: "Automação criada!" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -83,24 +83,24 @@ export default function Automations() {
       const { error } = await supabase.from("automations").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["automations"] }); toast({ title: "Automacao removida" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["automations"] }); toast({ title: "Automação removida" }); },
   });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Automacoes e Cadencias</h1>
-          <p className="text-sm text-muted-foreground mt-1">Configure sequencias automaticas de comunicacao</p>
+          <h1 className="text-2xl font-bold">Automações e Cadências</h1>
+          <p className="text-sm text-muted-foreground mt-1">Configure sequências automáticas de comunicação</p>
         </div>
         <div className="flex gap-2">
           {isPlatformAdmin && !clinicId && (
             <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clinica" /></SelectTrigger>
+              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
               <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           )}
-          <Button className="gap-2" onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> Nova Automacao</Button>
+          <Button className="gap-2" onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> Nova Automação</Button>
         </div>
       </div>
 
@@ -108,8 +108,8 @@ export default function Automations() {
         <Card>
           <CardContent className="py-16 text-center">
             <Zap className="mx-auto h-12 w-12 text-muted-foreground/30" />
-            <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhuma automacao configurada</p>
-            <p className="mt-1 text-sm text-muted-foreground/70">Clique em "Nova Automacao" para criar uma cadencia.</p>
+             <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhuma automação configurada</p>
+            <p className="mt-1 text-sm text-muted-foreground/70">Clique em "Nova Automação" para criar uma cadência.</p>
           </CardContent>
         </Card>
       ) : (
@@ -140,17 +140,17 @@ export default function Automations() {
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Nova Automacao</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Nova Automação</DialogTitle></DialogHeader>
           <div className="space-y-4">
             {isPlatformAdmin && !clinicId && (
-              <div><Label>Clinica *</Label>
+               <div><Label>Clínica *</Label>
                 <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar clinica" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
                   <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             )}
-            <div><Label>Nome *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Follow-up pos consulta" /></div>
+            <div><Label>Nome *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Follow-up pós consulta" /></div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Tipo</Label>
                 <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
@@ -172,9 +172,9 @@ export default function Automations() {
               </div>
             </div>
             <div><Label>Dias de Espera</Label><Input type="number" min="0" value={form.delay_days} onChange={e => setForm(f => ({ ...f, delay_days: e.target.value }))} /></div>
-            <div><Label>Template da Mensagem</Label><Textarea value={form.message_template} onChange={e => setForm(f => ({ ...f, message_template: e.target.value }))} placeholder="Use {{nome}}, {{clinica}}..." rows={3} /></div>
+            <div><Label>Template da Mensagem</Label><Textarea value={form.message_template} onChange={e => setForm(f => ({ ...f, message_template: e.target.value }))} placeholder="Use {{nome}}, {{clínica}}..." rows={3} /></div>
             <Button className="w-full" onClick={() => createMutation.mutate()} disabled={!form.name || !form.trigger_event || createMutation.isPending}>
-              {createMutation.isPending ? "Salvando..." : "Criar Automacao"}
+              {createMutation.isPending ? "Salvando..." : "Criar Automação"}
             </Button>
           </div>
         </DialogContent>

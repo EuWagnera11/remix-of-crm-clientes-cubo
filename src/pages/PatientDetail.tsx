@@ -6,8 +6,8 @@ export default function PatientDetail() {
     <Card>
       <CardContent className="py-16 text-center">
         <Users className="mx-auto h-12 w-12 text-muted-foreground/30" />
-        <p className="mt-4 text-lg font-medium text-muted-foreground">Paciente nao encontrado</p>
-        <p className="mt-1 text-sm text-muted-foreground/70">Nenhum dado disponivel.</p>
+        <p className="mt-4 text-lg font-medium text-muted-foreground">Paciente não encontrado</p>
+        <p className="mt-1 text-sm text-muted-foreground/70">Nenhum dado disponível.</p>
       </CardContent>
     </Card>
   );

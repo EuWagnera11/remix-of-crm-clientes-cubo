@@ -110,7 +110,7 @@ export default function Agenda() {
         <div className="flex items-center gap-3">
           {isPlatformAdmin && !clinicId && (
             <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clinica" /></SelectTrigger>
+              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
               <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           )}
@@ -146,7 +146,7 @@ export default function Agenda() {
           <CardContent className="p-0">
             <table className="w-full">
               <thead><tr className="border-b border-border text-left text-sm text-muted-foreground">
-                <th className="p-3 font-medium">Horario</th>
+                <th className="p-3 font-medium">Horário</th>
                 <th className="p-3 font-medium">Paciente</th>
                 <th className="p-3 font-medium">Procedimento</th>
                 <th className="p-3 font-medium">Status</th>
@@ -185,10 +185,10 @@ export default function Agenda() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Data *</Label><Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
-              <div><Label>Horario *</Label><Input type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} /></div>
+              <div><Label>Horário *</Label><Input type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} /></div>
             </div>
-            <div><Label>Duracao (min)</Label><Input type="number" value={form.duration_minutes} onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value }))} /></div>
-            <div><Label>Observacoes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+            <div><Label>Duração (min)</Label><Input type="number" value={form.duration_minutes} onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value }))} /></div>
+            <div><Label>Observações</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
             <Button className="w-full" onClick={() => createMutation.mutate()} disabled={!form.patient_id || !form.date || !form.time || createMutation.isPending}>
               {createMutation.isPending ? "Salvando..." : "Criar Agendamento"}
             </Button>

@@ -82,7 +82,7 @@ export default function Budgets() {
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
       setShowForm(false);
       setForm({ patient_id: "", total: "", discount: "0", payment_method: "", installments: "1", notes: "" });
-      toast({ title: "Orcamento criado!" });
+      toast({ title: "Orçamento criado!" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -94,15 +94,15 @@ export default function Budgets() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Orcamentos</h1>
+        <h1 className="text-2xl font-bold">Orçamentos</h1>
         <div className="flex gap-2">
           {isPlatformAdmin && !clinicId && (
             <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clinica" /></SelectTrigger>
+              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
               <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           )}
-          <Button className="gap-2" onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> Novo Orcamento</Button>
+          <Button className="gap-2" onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> Novo Orçamento</Button>
         </div>
       </div>
 
@@ -119,8 +119,8 @@ export default function Budgets() {
         <Card>
           <CardContent className="py-16 text-center">
             <FileText className="mx-auto h-12 w-12 text-muted-foreground/30" />
-            <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhum orcamento criado</p>
-            <p className="mt-1 text-sm text-muted-foreground/70">Clique em "Novo Orcamento" para adicionar.</p>
+            <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhum orçamento criado</p>
+            <p className="mt-1 text-sm text-muted-foreground/70">Clique em "Novo Orçamento" para adicionar.</p>
           </CardContent>
         </Card>
       ) : (
@@ -154,7 +154,7 @@ export default function Budgets() {
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Novo Orcamento</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Novo Orçamento</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>Paciente *</Label>
               <Select value={form.patient_id} onValueChange={v => setForm(f => ({ ...f, patient_id: v }))}>
@@ -182,9 +182,9 @@ export default function Budgets() {
               </div>
               <div><Label>Parcelas</Label><Input type="number" min="1" value={form.installments} onChange={e => setForm(f => ({ ...f, installments: e.target.value }))} /></div>
             </div>
-            <div><Label>Observacoes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+            <div><Label>Observações</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
             <Button className="w-full" onClick={() => createMutation.mutate()} disabled={!form.patient_id || !form.total || createMutation.isPending}>
-              {createMutation.isPending ? "Salvando..." : "Criar Orcamento"}
+              {createMutation.isPending ? "Salvando..." : "Criar Orçamento"}
             </Button>
           </div>
         </DialogContent>
