@@ -14,28 +14,10 @@ import {
   Search, Eye, MoreHorizontal, ChevronRight, Users, BarChart3,
   CreditCard, Settings, LayoutDashboard, ChevronLeft, Plus, Upload, X,
 } from "lucide-react";
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend,
-} from "recharts";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
-// Mock Admin Data
-const clinicsOverTime = [
-  { month: "Set", active: 42 }, { month: "Out", active: 45 }, { month: "Nov", active: 48 },
-  { month: "Dez", active: 52 }, { month: "Jan", active: 55 }, { month: "Fev", active: 58 },
-];
-
-// No MRR or plans - CRM is included in marketing agency plan
-
-const topClinics = [
-  { name: "Clinica Estetica SP", leads: 340, msgs: 2100, agendamentos: 180 },
-  { name: "OdontoVida", leads: 280, msgs: 1800, agendamentos: 150 },
-  { name: "Derma Center", leads: 220, msgs: 1500, agendamentos: 120 },
-  { name: "HOF Premium", leads: 200, msgs: 1200, agendamentos: 110 },
-  { name: "Clinica Bela Face", leads: 180, msgs: 1100, agendamentos: 95 },
-];
+// No mock data - all data comes from the database
 
 interface Clinic {
   id: string; name: string; status: "ativa" | "inativa" | "cancelada";
@@ -192,32 +174,26 @@ export default function AdminDashboard() {
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Clinicas Ativas</p><p className="text-2xl font-bold">{activeClinics}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Total Clinicas</p><p className="text-2xl font-bold">{totalClinics}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Canceladas</p><p className="text-2xl font-bold text-destructive">{canceladas}</p></CardContent></Card>
-                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">NPS Produto</p><p className="text-2xl font-bold text-success">72</p></CardContent></Card>
+                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">NPS Produto</p><p className="text-2xl font-bold text-muted-foreground">—</p></CardContent></Card>
               </div>
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Card><CardHeader><CardTitle className="text-sm">Clinicas Ativas</CardTitle></CardHeader><CardContent>
-                  <ResponsiveContainer width="100%" height={220}><LineChart data={clinicsOverTime}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} /><YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-                    <Line type="monotone" dataKey="active" stroke="#22C55E" strokeWidth={2} />
-                  </LineChart></ResponsiveContainer>
+              {clinics.length > 0 ? (
+                <>
+                  <Card><CardHeader><CardTitle className="text-sm">Clinicas Cadastradas</CardTitle></CardHeader><CardContent>
+                    <div className="overflow-x-auto"><table className="w-full text-sm">
+                      <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-3 font-medium">Clinica</th><th className="pb-3 font-medium">Cidade</th><th className="pb-3 font-medium">Status</th><th className="pb-3 font-medium">Proprietario</th></tr></thead>
+                      <tbody>{clinics.slice(0, 10).map((c) => (
+                        <tr key={c.id} className="border-b border-border/50"><td className="py-3 font-medium">{c.name}</td><td className="py-3">{c.city || "—"}</td><td className="py-3"><Badge variant="outline" className={STATUS_COLORS[c.status as keyof typeof STATUS_COLORS]}>{c.status}</Badge></td><td className="py-3">{c.owner_name}</td></tr>
+                      ))}</tbody>
+                    </table></div>
+                  </CardContent></Card>
+                </>
+              ) : (
+                <Card><CardContent className="py-12 text-center">
+                  <Building2 className="mx-auto h-12 w-12 text-muted-foreground/30" />
+                  <p className="mt-4 text-muted-foreground">Nenhuma clinica cadastrada ainda.</p>
+                  <p className="text-sm text-muted-foreground/70">Vá até a aba "Clinicas" para cadastrar a primeira.</p>
                 </CardContent></Card>
-                <Card><CardHeader><CardTitle className="text-sm">Top 5 Clinicas por Uso</CardTitle></CardHeader><CardContent>
-                  <ResponsiveContainer width="100%" height={220}><BarChart data={topClinics}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} /><YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-                    <Bar dataKey="leads" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart></ResponsiveContainer>
-                </CardContent></Card>
-              </div>
-              <Card><CardHeader><CardTitle className="text-sm">Top 5 Clinicas por Uso</CardTitle></CardHeader><CardContent>
-                <div className="overflow-x-auto"><table className="w-full text-sm">
-                  <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-3 font-medium">Clinica</th><th className="pb-3 font-medium">Leads</th><th className="pb-3 font-medium">Mensagens</th><th className="pb-3 font-medium">Agendamentos</th></tr></thead>
-                  <tbody>{topClinics.map((c, i) => (
-                    <tr key={i} className="border-b border-border/50"><td className="py-3 font-medium">{c.name}</td><td className="py-3">{c.leads}</td><td className="py-3">{c.msgs}</td><td className="py-3">{c.agendamentos}</td></tr>
-                  ))}</tbody>
-                </table></div>
-              </CardContent></Card>
+              )}
             </div>
           )}
 
