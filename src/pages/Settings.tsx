@@ -5,7 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Upload, RotateCcw, Palette, WifiOff } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Upload, RotateCcw, Palette, WifiOff, Plus, Trash2, UserPlus, Users } from "lucide-react";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +27,12 @@ const PRESET_COLORS = [
   { name: "Vermelho Intenso", value: "0 72% 51%" },
 ];
 
+const ROLE_LABELS: Record<string, string> = {
+  clinic_owner: "Proprietário",
+  clinic_staff: "Profissional",
+  clinic_receptionist: "Recepcionista",
+};
+
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useWhiteLabel();
   const { clinicId, isPlatformAdmin } = useAuth();
@@ -31,6 +41,8 @@ export default function SettingsPage() {
   const faviconInputRef = useRef<HTMLInputElement>(null);
 
   const [clinicForm, setClinicForm] = useState({ name: "", phone: "", email: "" });
+  const [teamDialogOpen, setTeamDialogOpen] = useState(false);
+  const [newMember, setNewMember] = useState({ email: "", password: "", role: "clinic_staff" });
 
   // Fetch clinic data
   const { data: clinic } = useQuery({
@@ -73,6 +85,68 @@ export default function SettingsPage() {
     }
   }, [adminClinics, selectedClinicId]);
 
+  // Team members
+  const { data: teamMembers, isLoading: teamLoading } = useQuery({
+    queryKey: ["team-members", effectiveClinicId],
+    queryFn: async () => {
+      if (!effectiveClinicId) return [];
+      const { data, error } = await supabase.functions.invoke("manage-team", {
+        body: { action: "list", clinic_id: effectiveClinicId },
+      });
+      if (error) throw error;
+      return data?.users || [];
+    },
+    enabled: !!effectiveClinicId,
+  });
+
+  const createMemberMutation = useMutation({
+    mutationFn: async () => {
+      if (!effectiveClinicId) throw new Error("Nenhuma clínica");
+      const { data, error } = await supabase.functions.invoke("manage-team", {
+        body: { action: "create", ...newMember, clinic_id: effectiveClinicId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+      setTeamDialogOpen(false);
+      setNewMember({ email: "", password: "", role: "clinic_staff" });
+      toast({ title: "Membro adicionado com sucesso!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteMemberMutation = useMutation({
+    mutationFn: async ({ role_id, user_id }: { role_id: string; user_id: string }) => {
+      const { data, error } = await supabase.functions.invoke("manage-team", {
+        body: { action: "delete", role_id, user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+      toast({ title: "Membro removido!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ role_id, new_role }: { role_id: string; new_role: string }) => {
+      const { data, error } = await supabase.functions.invoke("manage-team", {
+        body: { action: "update_role", role_id, new_role },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+      toast({ title: "Cargo atualizado!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!effectiveClinicId) throw new Error("Nenhuma clínica selecionada");
@@ -108,14 +182,14 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Configuracoes</h1>
+      <h1 className="text-2xl font-bold">Configurações</h1>
 
       <Tabs defaultValue="whitelabel">
         <TabsList className="bg-accent">
           <TabsTrigger value="whitelabel" className="gap-1.5"><Palette className="h-3.5 w-3.5" /> White Label</TabsTrigger>
-          <TabsTrigger value="clinic">Dados da Clinica</TabsTrigger>
+          <TabsTrigger value="clinic">Dados da Clínica</TabsTrigger>
           <TabsTrigger value="team">Equipe</TabsTrigger>
-          <TabsTrigger value="integrations">Integracoes</TabsTrigger>
+          <TabsTrigger value="integrations">Integrações</TabsTrigger>
           <TabsTrigger value="lgpd">LGPD</TabsTrigger>
         </TabsList>
 
@@ -125,15 +199,15 @@ export default function SettingsPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Identidade Visual</CardTitle>
-                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={() => { resetSettings(); toast({ title: "Configuracoes restauradas!" }); }}>
-                  <RotateCcw className="h-3.5 w-3.5" /> Restaurar padrao
+                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={() => { resetSettings(); toast({ title: "Configurações restauradas!" }); }}>
+                  <RotateCcw className="h-3.5 w-3.5" /> Restaurar padrão
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div><Label>Nome da Marca</Label><Input value={settings.clinicName} onChange={(e) => updateSettings({ clinicName: e.target.value })} placeholder="Nome que aparecera na sidebar" /></div>
-                <div><Label>Subtitulo</Label><Input value={settings.clinicSubtitle} onChange={(e) => updateSettings({ clinicSubtitle: e.target.value })} placeholder="Ex: CRM, Clinica, Studio" /></div>
+                <div><Label>Nome da Marca</Label><Input value={settings.clinicName} onChange={(e) => updateSettings({ clinicName: e.target.value })} placeholder="Nome que aparecerá na sidebar" /></div>
+                <div><Label>Subtítulo</Label><Input value={settings.clinicSubtitle} onChange={(e) => updateSettings({ clinicSubtitle: e.target.value })} placeholder="Ex: CRM, Clínica, Studio" /></div>
               </div>
 
               <div className="grid gap-6 sm:grid-cols-2">
@@ -166,7 +240,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-3">
-                <Label>Cor Primaria</Label>
+                <Label>Cor Primária</Label>
                 <div className="flex flex-wrap gap-3">
                   {PRESET_COLORS.map((color) => (
                     <button key={color.value} onClick={() => updateSettings({ primaryColor: color.value })} className="group flex flex-col items-center gap-1.5">
@@ -178,7 +252,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="rounded-xl border border-border bg-muted/20 p-6 space-y-3">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pre-visualizacao</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pré-visualização</p>
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden" style={{ backgroundColor: `hsl(${settings.primaryColor})` }}>
                     {settings.logoUrl ? (<img src={settings.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />) : (<span className="text-sm font-bold text-white">{settings.clinicName.charAt(0)}</span>)}
@@ -189,8 +263,8 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-2">
-                  <Button size="sm" style={{ backgroundColor: `hsl(${settings.primaryColor})` }} className="text-white">Botao Primario</Button>
-                  <Button size="sm" variant="outline" style={{ borderColor: `hsl(${settings.primaryColor})`, color: `hsl(${settings.primaryColor})` }}>Botao Outline</Button>
+                  <Button size="sm" style={{ backgroundColor: `hsl(${settings.primaryColor})` }} className="text-white">Botão Primário</Button>
+                  <Button size="sm" variant="outline" style={{ borderColor: `hsl(${settings.primaryColor})`, color: `hsl(${settings.primaryColor})` }}>Botão Outline</Button>
                 </div>
               </div>
             </CardContent>
@@ -207,29 +281,29 @@ export default function SettingsPage() {
             </div>
           )}
           <Card className="bg-card">
-            <CardHeader><CardTitle className="text-sm">Informacoes Gerais</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm">Informações Gerais</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div><Label>Nome da Clinica</Label><Input value={clinicForm.name} onChange={e => setClinicForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome da clinica" /></div>
+                <div><Label>Nome da Clínica</Label><Input value={clinicForm.name} onChange={e => setClinicForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome da clínica" /></div>
                 <div><Label>Telefone</Label><Input value={clinicForm.phone} onChange={e => setClinicForm(f => ({ ...f, phone: e.target.value }))} placeholder="(00) 0000-0000" /></div>
                 <div><Label>E-mail</Label><Input value={clinicForm.email} onChange={e => setClinicForm(f => ({ ...f, email: e.target.value }))} placeholder="contato@clinica.com" /></div>
               </div>
               <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Salvando..." : "Salvar Alteracoes"}
+                {saveMutation.isPending ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </CardContent>
           </Card>
 
           <Card className="bg-card">
-            <CardHeader><CardTitle className="text-sm">Horario de Funcionamento</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm">Horário de Funcionamento</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {["Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado", "Domingo"].map((day, i) => (
+                {["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"].map((day, i) => (
                   <div key={day} className="flex items-center gap-4 text-sm">
                     <span className="w-20">{day}</span>
                     <Switch defaultChecked={i < 6} />
                     <Input className="w-24" placeholder="08:00" disabled={i === 6} />
-                    <span>ate</span>
+                    <span>até</span>
                     <Input className="w-24" placeholder="18:00" disabled={i === 6} />
                   </div>
                 ))}
@@ -238,25 +312,96 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
+        {/* Team Management */}
         <TabsContent value="team" className="mt-4 space-y-4">
           <Card>
-            <CardContent className="py-16 text-center">
-              <p className="text-muted-foreground">Nenhum membro da equipe cadastrado.</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">Adicione profissionais e recepcionistas ao sistema.</p>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Membros da Equipe</CardTitle>
+                <Dialog open={teamDialogOpen} onOpenChange={setTeamDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="gap-1.5"><UserPlus className="h-3.5 w-3.5" /> Adicionar Membro</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader><DialogTitle>Novo Membro da Equipe</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                      <div><Label>E-mail</Label><Input value={newMember.email} onChange={e => setNewMember(m => ({ ...m, email: e.target.value }))} placeholder="email@exemplo.com" /></div>
+                      <div><Label>Senha Inicial</Label><Input type="password" value={newMember.password} onChange={e => setNewMember(m => ({ ...m, password: e.target.value }))} placeholder="Mínimo 6 caracteres" /></div>
+                      <div>
+                        <Label>Cargo</Label>
+                        <Select value={newMember.role} onValueChange={v => setNewMember(m => ({ ...m, role: v }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="clinic_owner">Proprietário</SelectItem>
+                            <SelectItem value="clinic_staff">Profissional</SelectItem>
+                            <SelectItem value="clinic_receptionist">Recepcionista</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button className="w-full" onClick={() => createMemberMutation.mutate()} disabled={createMemberMutation.isPending || !newMember.email || !newMember.password}>
+                        {createMemberMutation.isPending ? "Criando..." : "Criar Membro"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {teamLoading ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">Carregando...</p>
+              ) : !teamMembers?.length ? (
+                <div className="py-12 text-center">
+                  <Users className="mx-auto h-10 w-10 text-muted-foreground/30" />
+                  <p className="mt-3 text-muted-foreground">Nenhum membro cadastrado nesta clínica.</p>
+                  <p className="text-sm text-muted-foreground/70 mt-1">Adicione profissionais e recepcionistas ao sistema.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>E-mail</TableHead>
+                      <TableHead>Cargo</TableHead>
+                      <TableHead className="w-[100px]">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {teamMembers.map((member: any) => (
+                      <TableRow key={member.id}>
+                        <TableCell className="font-medium">{member.email}</TableCell>
+                        <TableCell>
+                          <Select value={member.role} onValueChange={v => updateRoleMutation.mutate({ role_id: member.role_id, new_role: v })}>
+                            <SelectTrigger className="w-40 h-8"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="clinic_owner">Proprietário</SelectItem>
+                              <SelectItem value="clinic_staff">Profissional</SelectItem>
+                              <SelectItem value="clinic_receptionist">Recepcionista</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => deleteMemberMutation.mutate({ role_id: member.role_id, user_id: member.id })}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="integrations" className="mt-4 space-y-4">
           <Card className="bg-card">
-            <CardHeader><CardTitle className="text-sm">Integracoes</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm">Integrações</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between rounded-lg border border-border p-4">
-                <div className="flex items-center gap-3"><WifiOff className="h-5 w-5 text-destructive" /><div><p className="text-sm font-medium">WhatsApp (Evolution API)</p><p className="text-xs text-muted-foreground">Nao conectado</p></div></div>
+                <div className="flex items-center gap-3"><WifiOff className="h-5 w-5 text-destructive" /><div><p className="text-sm font-medium">WhatsApp (Evolution API)</p><p className="text-xs text-muted-foreground">Não conectado</p></div></div>
                 <Button variant="outline" size="sm" disabled>Configurar</Button>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border p-4">
-                <div className="flex items-center gap-3"><WifiOff className="h-5 w-5 text-destructive" /><div><p className="text-sm font-medium">Google Calendar</p><p className="text-xs text-muted-foreground">Nao conectado</p></div></div>
+                <div className="flex items-center gap-3"><WifiOff className="h-5 w-5 text-destructive" /><div><p className="text-sm font-medium">Google Calendar</p><p className="text-xs text-muted-foreground">Não conectado</p></div></div>
                 <Button variant="outline" size="sm" disabled>Configurar</Button>
               </div>
             </CardContent>
@@ -267,7 +412,7 @@ export default function SettingsPage() {
           <Card className="bg-card">
             <CardHeader><CardTitle className="text-sm">LGPD - Consentimento</CardTitle></CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Configure os termos de consentimento e politicas de privacidade da clinica.</p>
+              <p className="text-sm text-muted-foreground">Configure os termos de consentimento e políticas de privacidade da clínica.</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -275,3 +420,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

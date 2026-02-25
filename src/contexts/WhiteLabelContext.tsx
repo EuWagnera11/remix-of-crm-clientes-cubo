@@ -63,6 +63,7 @@ export function WhiteLabelProvider({ children }: { children: React.ReactNode }) 
       // Reset to defaults when no clinic is selected
       if (isPlatformAdmin) {
         setSettings(DEFAULT_SETTINGS);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
         return;
       }
       return;
@@ -80,7 +81,10 @@ export function WhiteLabelProvider({ children }: { children: React.ReactNode }) 
           primaryColor: data.primary_color || DEFAULT_SETTINGS.primaryColor,
           logoUrl: data.logo_url || null,
         };
-        setSettings(prev => ({ ...prev, ...updates }));
+        const next = { ...DEFAULT_SETTINGS, ...updates };
+        setSettings(next);
+        // Cache to localStorage so refresh doesn't flicker
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       }
     };
     fetchClinic();
