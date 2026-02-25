@@ -101,7 +101,7 @@ export default function Patients() {
         <div className="flex gap-2">
           {isPlatformAdmin && !clinicId && (
             <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clinica" /></SelectTrigger>
+              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
               <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           )}
@@ -160,9 +160,9 @@ export default function Patients() {
           <DialogHeader><DialogTitle>Novo Paciente</DialogTitle></DialogHeader>
           <div className="space-y-4">
             {isPlatformAdmin && !clinicId && (
-              <div><Label>Clinica *</Label>
+              <div><Label>Clínica *</Label>
                 <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar clinica" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
                   <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
@@ -207,7 +207,7 @@ export default function Patients() {
                 </Select>
               </div>
             </div>
-            <div><Label>Observacoes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Observacoes sobre o paciente..." /></div>
+            <div><Label>Observações</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Observações sobre o paciente..." /></div>
             <Button className="w-full" onClick={() => createMutation.mutate()} disabled={!form.name || createMutation.isPending}>
               {createMutation.isPending ? "Salvando..." : "Cadastrar Paciente"}
             </Button>

@@ -106,10 +106,10 @@ export default function Dashboard() {
           <CardContent className="py-16 text-center">
             <Building2 className="mx-auto h-12 w-12 text-muted-foreground/30" />
             <p className="mt-4 text-lg font-medium text-muted-foreground">
-              {clinicId ? "Nenhum dado disponivel ainda" : "Selecione uma clinica pelo painel admin"}
+              {clinicId ? "Nenhum dado disponível ainda" : "Selecione uma clínica pelo painel admin"}
             </p>
             <p className="mt-1 text-sm text-muted-foreground/70">
-              {clinicId ? "Os dados aparecerão aqui conforme leads, agendamentos e orcamentos forem registrados." : "Acesse uma clinica para ver os dados do CRM."}
+              {clinicId ? "Os dados aparecerão aqui conforme leads, agendamentos e orçamentos forem registrados." : "Acesse uma clínica para ver os dados do CRM."}
             </p>
           </CardContent>
         </Card>

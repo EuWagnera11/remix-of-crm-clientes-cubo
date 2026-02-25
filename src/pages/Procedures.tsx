@@ -73,11 +73,11 @@ export default function Procedures() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Catalogo de Procedimentos</h1>
+        <h1 className="text-2xl font-bold">Catálogo de Procedimentos</h1>
         <div className="flex gap-2">
           {isPlatformAdmin && !clinicId && (
             <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clinica" /></SelectTrigger>
+              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
               <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           )}
@@ -132,20 +132,20 @@ export default function Procedures() {
           <DialogHeader><DialogTitle>Novo Procedimento</DialogTitle></DialogHeader>
           <div className="space-y-4">
             {isPlatformAdmin && !clinicId && (
-              <div><Label>Clinica *</Label>
+              <div><Label>Clínica *</Label>
                 <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar clinica" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
                   <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             )}
             <div><Label>Nome *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Limpeza, Implante..." /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Categoria</Label><Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Ex: Estetica, Ortodontia" /></div>
-              <div><Label>Preco (R$) *</Label><Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" /></div>
+              <div><Label>Categoria</Label><Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Ex: Estética, Ortodontia" /></div>
+              <div><Label>Preço (R$) *</Label><Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" /></div>
             </div>
-            <div><Label>Duracao (minutos)</Label><Input type="number" value={form.duration_minutes} onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value }))} /></div>
-            <div><Label>Descricao</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Descricao do procedimento..." /></div>
+            <div><Label>Duração (minutos)</Label><Input type="number" value={form.duration_minutes} onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value }))} /></div>
+            <div><Label>Descrição</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição do procedimento..." /></div>
             <Button className="w-full" onClick={() => createMutation.mutate()} disabled={!form.name || !form.price || createMutation.isPending}>
               {createMutation.isPending ? "Salvando..." : "Cadastrar Procedimento"}
             </Button>

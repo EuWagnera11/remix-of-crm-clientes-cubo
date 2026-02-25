@@ -72,7 +72,7 @@ export default function AdminClinicDetail() {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center space-y-4">
-          <p className="text-lg text-muted-foreground">Clinica nao encontrada</p>
+          <p className="text-lg text-muted-foreground">Clínica não encontrada</p>
           <Button variant="outline" onClick={() => navigate("/admin")}>
             <ChevronLeft className="mr-2 h-4 w-4" />Voltar
           </Button>
@@ -159,12 +159,12 @@ export default function AdminClinicDetail() {
             {/* Info Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Informacoes da Clinica</CardTitle>
+                <CardTitle className="text-sm">Informações da Clínica</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-3">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <div><p className="text-xs text-muted-foreground">Proprietario</p><p className="text-sm font-medium">{clinic.owner_name}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Proprietário</p><p className="text-sm font-medium">{clinic.owner_name}</p></div>
                 </div>
                 <Separator />
                 <div className="flex items-center gap-3">
@@ -179,7 +179,7 @@ export default function AdminClinicDetail() {
                 <Separator />
                 <div className="flex items-center gap-3">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <div><p className="text-xs text-muted-foreground">Localizacao</p><p className="text-sm">{clinic.city || "—"}{clinic.state ? `, ${clinic.state}` : ""}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Localização</p><p className="text-sm">{clinic.city || "—"}{clinic.state ? `, ${clinic.state}` : ""}</p></div>
                 </div>
                 <Separator />
                 <div className="flex items-center gap-3">
@@ -190,7 +190,7 @@ export default function AdminClinicDetail() {
                   <>
                     <Separator />
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Observacoes</p>
+                      <p className="text-xs text-muted-foreground mb-1">Observações</p>
                       <p className="text-sm">{clinic.notes}</p>
                     </div>
                   </>

@@ -316,7 +316,7 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast({ title: "Arquivo invalido", description: "Selecione uma imagem", variant: "destructive" });
+      toast({ title: "Arquivo inválido", description: "Selecione uma imagem", variant: "destructive" });
       return;
     }
     const reader = new FileReader();

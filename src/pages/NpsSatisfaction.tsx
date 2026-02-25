@@ -61,7 +61,7 @@ export default function NpsSatisfaction() {
       queryClient.invalidateQueries({ queryKey: ["nps"] });
       setShowForm(false);
       setForm({ patient_id: "", score: "", comment: "" });
-      toast({ title: "Avaliacao registrada!" });
+      toast({ title: "Avaliação registrada!" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -74,23 +74,23 @@ export default function NpsSatisfaction() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">NPS e Satisfacao</h1>
+        <h1 className="text-2xl font-bold">NPS e Satisfação</h1>
         <div className="flex gap-2">
           {isPlatformAdmin && !clinicId && (
             <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clinica" /></SelectTrigger>
+              <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
               <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           )}
-          <Button className="gap-2" onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> Nova Avaliacao</Button>
+          <Button className="gap-2" onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> Nova Avaliação</Button>
         </div>
       </div>
 
       {responses.length > 0 && (
         <div className="grid grid-cols-4 gap-4">
           <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">NPS Score</p><p className="text-2xl font-bold mt-1">{npsScore}</p></CardContent></Card>
-          <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Promotores (9-10)</p><p className="text-2xl font-bold mt-1 text-green-500">{promoters}</p></CardContent></Card>
-          <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Neutros (7-8)</p><p className="text-2xl font-bold mt-1 text-yellow-500">{passives}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Promotores (9-10)</p><p className="text-2xl font-bold mt-1" style={{color: "hsl(var(--primary))"}}>{promoters}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Neutros (7-8)</p><p className="text-2xl font-bold mt-1 text-muted-foreground">{passives}</p></CardContent></Card>
           <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Detratores (0-6)</p><p className="text-2xl font-bold mt-1 text-destructive">{detractors}</p></CardContent></Card>
         </div>
       )}
@@ -99,8 +99,8 @@ export default function NpsSatisfaction() {
         <Card>
           <CardContent className="py-16 text-center">
             <Star className="mx-auto h-12 w-12 text-muted-foreground/30" />
-            <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhuma avaliacao recebida</p>
-            <p className="mt-1 text-sm text-muted-foreground/70">Clique em "Nova Avaliacao" para registrar ou as avaliacoes serao coletadas via automacoes.</p>
+            <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhuma avaliação recebida</p>
+            <p className="mt-1 text-sm text-muted-foreground/70">Clique em "Nova Avaliação" para registrar ou as avaliações serão coletadas via automações.</p>
           </CardContent>
         </Card>
       ) : (
@@ -110,7 +110,7 @@ export default function NpsSatisfaction() {
               <thead><tr className="border-b border-border text-left text-sm text-muted-foreground">
                 <th className="p-3 font-medium">Paciente</th>
                 <th className="p-3 font-medium">Nota</th>
-                <th className="p-3 font-medium">Comentario</th>
+                <th className="p-3 font-medium">Comentário</th>
                 <th className="p-3 font-medium">Data</th>
               </tr></thead>
               <tbody>
@@ -130,7 +130,7 @@ export default function NpsSatisfaction() {
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Nova Avaliacao NPS</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Nova Avaliação NPS</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>Paciente *</Label>
               <Select value={form.patient_id} onValueChange={v => setForm(f => ({ ...f, patient_id: v }))}>
@@ -139,9 +139,9 @@ export default function NpsSatisfaction() {
               </Select>
             </div>
             <div><Label>Nota (0-10) *</Label><Input type="number" min="0" max="10" value={form.score} onChange={e => setForm(f => ({ ...f, score: e.target.value }))} placeholder="0-10" /></div>
-            <div><Label>Comentario</Label><Textarea value={form.comment} onChange={e => setForm(f => ({ ...f, comment: e.target.value }))} placeholder="O que o paciente comentou..." /></div>
+            <div><Label>Comentário</Label><Textarea value={form.comment} onChange={e => setForm(f => ({ ...f, comment: e.target.value }))} placeholder="O que o paciente comentou..." /></div>
             <Button className="w-full" onClick={() => createMutation.mutate()} disabled={!form.patient_id || !form.score || createMutation.isPending}>
-              {createMutation.isPending ? "Salvando..." : "Registrar Avaliacao"}
+              {createMutation.isPending ? "Salvando..." : "Registrar Avaliação"}
             </Button>
           </div>
         </DialogContent>

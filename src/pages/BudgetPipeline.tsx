@@ -47,10 +47,10 @@ export default function BudgetPipeline() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Pipeline de Orcamentos</h1>
+        <h1 className="text-2xl font-bold">Pipeline de Orçamentos</h1>
         {isPlatformAdmin && !clinicId && (
           <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-            <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clinica" /></SelectTrigger>
+            <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
             <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
           </Select>
         )}
@@ -60,8 +60,8 @@ export default function BudgetPipeline() {
         <Card>
           <CardContent className="py-16 text-center">
             <FileText className="mx-auto h-12 w-12 text-muted-foreground/30" />
-            <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhum orcamento no pipeline</p>
-            <p className="mt-1 text-sm text-muted-foreground/70">Crie orcamentos na aba "Orcamentos".</p>
+            <p className="mt-4 text-lg font-medium text-muted-foreground">Nenhum orçamento no pipeline</p>
+            <p className="mt-1 text-sm text-muted-foreground/70">Crie orçamentos na aba "Orçamentos".</p>
           </CardContent>
         </Card>
       ) : (
