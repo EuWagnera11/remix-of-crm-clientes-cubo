@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import ThemeToggle from "@/components/ThemeToggle";
 import GlobalSearch from "@/components/GlobalSearch";
+import AiAssistant from "@/components/AiAssistant";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogOut, Eye } from "lucide-react";
@@ -318,6 +319,9 @@ export default function AppLayout() {
 
       {/* Global Search */}
       <GlobalSearch />
+
+      {/* AI Assistant */}
+      <AiAssistant />
     </div>
   );
 }
