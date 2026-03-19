@@ -62,9 +62,11 @@ export default function AdminClinicDetail() {
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-background"><p className="text-muted-foreground">Carregando...</p></div>;
   if (!clinic) return <div className="flex h-screen items-center justify-center bg-background"><div className="text-center space-y-4"><p className="text-lg text-muted-foreground">Clínica não encontrada</p><Button variant="outline" onClick={() => navigate("/admin")}><ChevronLeft className="mr-2 h-4 w-4" />Voltar</Button></div></div>;
 
+  const statusInfo = STATUS_MAP[clinic.status as string] || STATUS_MAP.ativa;
   const totalRevenue = Number(counts?.approved_revenue || 0);
   const budgetCount = Number(counts?.budget_count || 0);
   const conversionRate = "—";
+  const whatsapp = integrations.find((i: any) => i.provider === "evolution_api");
   const gcal = integrations.find((i: any) => i.provider === "google_calendar");
 
   return (
