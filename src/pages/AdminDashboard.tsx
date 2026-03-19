@@ -14,7 +14,7 @@ import {
   Search, Eye, ChevronRight, Users, BarChart3,
   LayoutDashboard, ChevronLeft, Plus, Upload,
   Calendar, DollarSign, TrendingUp, Wifi, WifiOff, History,
-  Edit, CheckCircle, XCircle, Loader2, Ban, ShieldCheck,
+  Edit, CheckCircle, XCircle, Loader2, Ban, ShieldCheck, EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +49,7 @@ export default function AdminDashboard() {
     ownerName: "", ownerEmail: "", primaryColor: "24 95% 53%", notes: "",
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [showSensitive, setShowSensitive] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   // ===== Queries =====
@@ -291,6 +292,11 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Gestão de Clínicas</h1>
+                <div className="flex items-center gap-2">
+                  <Button variant={showSensitive ? "default" : "outline"} size="sm" className="gap-1.5" onClick={() => setShowSensitive(!showSensitive)}>
+                    {showSensitive ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                    {showSensitive ? "Ocultar Dados" : "Mostrar Dados"}
+                  </Button>
                 <Dialog open={newClinicOpen} onOpenChange={setNewClinicOpen}>
                   <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Nova Clínica</Button></DialogTrigger>
                   <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -337,6 +343,7 @@ export default function AdminDashboard() {
                     </div>
                   </DialogContent>
                 </Dialog>
+                </div>
               </div>
 
               <div className="flex gap-2">
@@ -358,7 +365,7 @@ export default function AdminDashboard() {
                   const m = clinicMetrics.find(cm => cm.id === c.id);
                   return (
                     <tr key={c.id} className="border-b border-border/50">
-                      <td className="py-3"><div><span className="font-medium">{c.owner_name}</span><p className="text-xs text-muted-foreground">{c.owner_email}</p></div></td>
+                      <td className="py-3"><div><span className="font-medium">{c.owner_name}</span>{showSensitive && <p className="text-xs text-muted-foreground">{c.owner_email}</p>}</div></td>
                       <td className="py-3">
                         <Select value={c.status} onValueChange={v => updateStatusMutation.mutate({ id: c.id, status: v })}>
                           <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
