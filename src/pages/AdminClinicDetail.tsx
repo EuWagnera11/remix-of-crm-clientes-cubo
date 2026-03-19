@@ -71,7 +71,17 @@ export default function AdminClinicDetail() {
 
   const { data: budgets = [] } = useQuery({
     queryKey: ["admin-clinic-budgets", id],
-    queryFn: async () => { const { data } = await supabase.from("budgets").select("id, status, total").eq("clinic_id", id!); return data || []; },
+    queryFn: async () => {
+      let allData: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data } = await supabase.from("budgets").select("id, status, total").eq("clinic_id", id!).range(from, from + 999);
+        allData = allData.concat(data || []);
+        if (!data || data.length < 1000) break;
+        from += 1000;
+      }
+      return allData;
+    },
     enabled: !!id,
   });
 
