@@ -151,21 +151,21 @@ export default function AdminDashboard() {
 
   const activeClinics = clinics.filter(c => c.status === "ativa").length;
   const canceladas = clinics.filter(c => c.status === "cancelada").length;
-  const totalLeads = allPatients.length;
-  const totalAppointments = allAppointments.length;
-  const totalRevenue = allBudgets.filter(b => b.status === "aprovado").reduce((s, b) => s + Number(b.total || 0), 0);
+  const totalLeads = clinicMetricsData.reduce((s: number, m: any) => s + Number(m.patient_count || 0), 0);
+  const totalAppointments = clinicMetricsData.reduce((s: number, m: any) => s + Number(m.appointment_count || 0), 0);
+  const totalRevenue = clinicMetricsData.reduce((s: number, m: any) => s + Number(m.approved_revenue || 0), 0);
 
   const filteredClinics = clinics.filter(c => !search || c.owner_name.toLowerCase().includes(search.toLowerCase()) || c.name.toLowerCase().includes(search.toLowerCase()));
 
   // Per-clinic metrics for ranking
   const clinicMetrics = clinics.map(c => {
-    const patients = allPatients.filter(p => p.clinic_id === c.id).length;
-    const appointments = allAppointments.filter(a => a.clinic_id === c.id).length;
-    const revenue = allBudgets.filter(b => b.clinic_id === c.id && b.status === "aprovado").reduce((s, b) => s + Number(b.total || 0), 0);
-    const budgets = allBudgets.filter(b => b.clinic_id === c.id).length;
+    const m = clinicMetricsData.find((cm: any) => cm.clinic_id === c.id);
+    const patients = Number(m?.patient_count || 0);
+    const appointments = Number(m?.appointment_count || 0);
+    const revenue = Number(m?.approved_revenue || 0);
     const whatsapp = allIntegrations.find(i => i.clinic_id === c.id && i.provider === "evolution_api");
     const gcal = allIntegrations.find(i => i.clinic_id === c.id && i.provider === "google_calendar");
-    return { ...c, patients, appointments, revenue, budgets, whatsappConnected: whatsapp?.status === "connected", gcalConnected: gcal?.status === "connected" };
+    return { ...c, patients, appointments, revenue, budgets: 0, whatsappConnected: whatsapp?.status === "connected", gcalConnected: gcal?.status === "connected" };
   });
 
   const rankingByPatients = [...clinicMetrics].sort((a, b) => b.patients - a.patients);
