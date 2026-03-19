@@ -365,7 +365,7 @@ export default function AdminDashboard() {
                   const m = clinicMetrics.find(cm => cm.id === c.id);
                   return (
                     <tr key={c.id} className="border-b border-border/50">
-                      <td className="py-3"><div><span className="font-medium">{c.owner_name}</span><p className="text-xs text-muted-foreground">{c.owner_email}</p></div></td>
+                      <td className="py-3"><div><span className="font-medium">{c.owner_name}</span>{showSensitive && <p className="text-xs text-muted-foreground">{c.owner_email}</p>}</div></td>
                       <td className="py-3">
                         <Select value={c.status} onValueChange={v => updateStatusMutation.mutate({ id: c.id, status: v })}>
                           <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
