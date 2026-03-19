@@ -43,7 +43,18 @@ export default function Reports() {
 
   const { data: appointments } = useQuery({
     queryKey: ["report-appointments", clinicId],
-    queryFn: async () => { if (!clinicId) return []; const { data } = await supabase.from("appointments").select("id, date, status, professional_name").eq("clinic_id", clinicId); return data || []; },
+    queryFn: async () => {
+      if (!clinicId) return [];
+      let allData: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data } = await supabase.from("appointments").select("id, date, status, professional_name").eq("clinic_id", clinicId).range(from, from + 999);
+        allData = allData.concat(data || []);
+        if (!data || data.length < 1000) break;
+        from += 1000;
+      }
+      return allData;
+    },
     enabled: !!clinicId,
   });
 
