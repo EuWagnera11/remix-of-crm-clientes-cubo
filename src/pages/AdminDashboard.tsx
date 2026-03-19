@@ -94,8 +94,15 @@ export default function AdminDashboard() {
   const { data: allBudgets = [] } = useQuery({
     queryKey: ["admin-all-budgets"],
     queryFn: async () => {
-      const { data } = await supabase.from("budgets").select("id, clinic_id, status, total, created_at");
-      return data || [];
+      let allData: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data } = await supabase.from("budgets").select("id, clinic_id, status, total, created_at").range(from, from + 999);
+        allData = allData.concat(data || []);
+        if (!data || data.length < 1000) break;
+        from += 1000;
+      }
+      return allData;
     },
   });
 
