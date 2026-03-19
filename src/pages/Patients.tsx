@@ -152,10 +152,10 @@ export default function Patients() {
             </SelectContent>
           </Select>
           {allTags.length > 0 && (
-            <Select value={filterTag} onValueChange={setFilterTag}>
+            <Select value={filterTag || "all"} onValueChange={v => setFilterTag(v === "all" ? "" : v)}>
               <SelectTrigger className="w-36"><SelectValue placeholder="Tag" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas tags</SelectItem>
+                <SelectItem value="all">Todas tags</SelectItem>
                 {allTags.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
