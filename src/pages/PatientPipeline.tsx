@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { fetchAll } from "@/lib/fetchAll";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
