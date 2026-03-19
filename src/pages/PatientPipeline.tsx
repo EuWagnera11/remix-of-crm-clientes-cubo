@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fetchAll } from "@/lib/fetchAll";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,10 +37,9 @@ export default function PatientPipeline() {
   const { data: patients = [] } = useQuery({
     queryKey: ["patients-pipeline", effectiveClinicId],
     queryFn: async () => {
-      let q = supabase.from("patients").select("*").order("updated_at", { ascending: false });
-      if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
-      const { data } = await q;
-      return data || [];
+      const filters: any = { order: { column: "updated_at", ascending: false } };
+      if (effectiveClinicId) filters.eq = { clinic_id: effectiveClinicId };
+      return await fetchAll("patients", "*", filters);
     },
   });
 
