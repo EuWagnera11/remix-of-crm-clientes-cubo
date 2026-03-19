@@ -170,7 +170,7 @@ export default function AdminDashboard() {
   const totalAppointments = allAppointments.length;
   const totalRevenue = allBudgets.filter(b => b.status === "aprovado").reduce((s, b) => s + Number(b.total || 0), 0);
 
-  const filteredClinics = clinics.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredClinics = clinics.filter(c => !search || c.owner_name.toLowerCase().includes(search.toLowerCase()) || c.name.toLowerCase().includes(search.toLowerCase()));
 
   // Per-clinic metrics for ranking
   const clinicMetrics = clinics.map(c => {
@@ -184,7 +184,7 @@ export default function AdminDashboard() {
   });
 
   const rankingByPatients = [...clinicMetrics].sort((a, b) => b.patients - a.patients);
-  const rankingChart = rankingByPatients.slice(0, 10).map(c => ({ name: c.name.length > 15 ? c.name.slice(0, 15) + "…" : c.name, pacientes: c.patients, agendamentos: c.appointments }));
+  const rankingChart = rankingByPatients.slice(0, 10).map(c => ({ name: c.owner_name.length > 15 ? c.owner_name.slice(0, 15) + "…" : c.owner_name, pacientes: c.patients, agendamentos: c.appointments }));
 
   // Churn risk: clinics with 0 appointments or inactive
   const churnRisk = clinicMetrics.filter(c => c.status !== "cancelada" && (c.appointments === 0 || c.patients === 0));
@@ -257,13 +257,13 @@ export default function AdminDashboard() {
                   <CardContent className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead><tr className="border-b border-border text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">Clínica</th><th className="pb-3 font-medium">Status</th>
+                        <th className="pb-3 font-medium">Proprietário</th><th className="pb-3 font-medium">Status</th>
                         <th className="pb-3 font-medium">Leads</th><th className="pb-3 font-medium">Agend.</th>
                         <th className="pb-3 font-medium">Fatur.</th><th className="pb-3 font-medium">WhatsApp</th><th className="pb-3 font-medium">Calendar</th>
                       </tr></thead>
                       <tbody>{clinicMetrics.map(c => (
                         <tr key={c.id} className="border-b border-border/50">
-                          <td className="py-3"><Link to={`/admin/clinic/${c.id}`} className="font-medium hover:text-primary">{c.name}</Link></td>
+                          <td className="py-3"><Link to={`/admin/clinic/${c.id}`} className="font-medium hover:text-primary">{c.owner_name}</Link></td>
                           <td className="py-3"><Badge variant="outline" className={STATUS_COLORS[c.status]}>{c.status}</Badge></td>
                           <td className="py-3">{c.patients}</td>
                           <td className="py-3">{c.appointments}</td>
@@ -360,20 +360,20 @@ export default function AdminDashboard() {
 
               <Card><CardContent className="pt-6 overflow-x-auto"><table className="w-full text-sm">
                 <thead><tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="pb-3 font-medium">Clínica</th><th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Cidade</th><th className="pb-3 font-medium">Proprietário</th>
+                  <th className="pb-3 font-medium">Proprietário</th><th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 font-medium">Cidade</th>
                   <th className="pb-3 font-medium">Leads</th><th className="pb-3 font-medium">Integrações</th>
                   <th className="pb-3 font-medium">Ações</th>
                 </tr></thead>
                 <tbody>{loadingClinics ? (
-                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Carregando...</td></tr>
+                  <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">Carregando...</td></tr>
                 ) : filteredClinics.length === 0 ? (
-                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Nenhuma clínica encontrada</td></tr>
+                  <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">Nenhuma clínica encontrada</td></tr>
                 ) : filteredClinics.map(c => {
                   const m = clinicMetrics.find(cm => cm.id === c.id);
                   return (
                     <tr key={c.id} className="border-b border-border/50">
-                      <td className="py-3"><div><span className="font-medium">{c.name}</span><p className="text-xs text-muted-foreground">{c.owner_email}</p></div></td>
+                      <td className="py-3"><div><span className="font-medium">{c.owner_name}</span><p className="text-xs text-muted-foreground">{c.owner_email}</p></div></td>
                       <td className="py-3">
                         <Select value={c.status} onValueChange={v => updateStatusMutation.mutate({ id: c.id, status: v })}>
                           <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
@@ -385,7 +385,6 @@ export default function AdminDashboard() {
                         </Select>
                       </td>
                       <td className="py-3 text-muted-foreground">{c.city || "—"}{c.state ? `, ${c.state}` : ""}</td>
-                      <td className="py-3">{c.owner_name}</td>
                       <td className="py-3">{m?.patients || 0}</td>
                       <td className="py-3">
                         <div className="flex gap-1.5">
