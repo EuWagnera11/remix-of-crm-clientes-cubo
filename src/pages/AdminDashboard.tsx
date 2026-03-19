@@ -257,13 +257,13 @@ export default function AdminDashboard() {
                   <CardContent className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead><tr className="border-b border-border text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">Clínica</th><th className="pb-3 font-medium">Status</th>
+                        <th className="pb-3 font-medium">Proprietário</th><th className="pb-3 font-medium">Status</th>
                         <th className="pb-3 font-medium">Leads</th><th className="pb-3 font-medium">Agend.</th>
                         <th className="pb-3 font-medium">Fatur.</th><th className="pb-3 font-medium">WhatsApp</th><th className="pb-3 font-medium">Calendar</th>
                       </tr></thead>
                       <tbody>{clinicMetrics.map(c => (
                         <tr key={c.id} className="border-b border-border/50">
-                          <td className="py-3"><Link to={`/admin/clinic/${c.id}`} className="font-medium hover:text-primary">{c.name}</Link></td>
+                          <td className="py-3"><Link to={`/admin/clinic/${c.id}`} className="font-medium hover:text-primary">{c.owner_name}</Link></td>
                           <td className="py-3"><Badge variant="outline" className={STATUS_COLORS[c.status]}>{c.status}</Badge></td>
                           <td className="py-3">{c.patients}</td>
                           <td className="py-3">{c.appointments}</td>
