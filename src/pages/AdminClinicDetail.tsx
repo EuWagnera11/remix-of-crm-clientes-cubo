@@ -111,11 +111,11 @@ export default function AdminClinicDetail() {
 
             {/* KPIs */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" /><span className="text-xs">Leads</span></div><p className="mt-1 text-2xl font-bold">{patients.length}</p></CardContent></Card>
-              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-4 w-4" /><span className="text-xs">Agendamentos</span></div><p className="mt-1 text-2xl font-bold">{appointments.length}</p></CardContent></Card>
+              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" /><span className="text-xs">Leads</span></div><p className="mt-1 text-2xl font-bold">{Number(counts?.patient_count || 0)}</p></CardContent></Card>
+              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-4 w-4" /><span className="text-xs">Agendamentos</span></div><p className="mt-1 text-2xl font-bold">{Number(counts?.appointment_count || 0)}</p></CardContent></Card>
               <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><DollarSign className="h-4 w-4" /><span className="text-xs">Faturamento</span></div><p className="mt-1 text-2xl font-bold">R$ {totalRevenue.toLocaleString("pt-BR")}</p></CardContent></Card>
               <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><TrendingUp className="h-4 w-4" /><span className="text-xs">Conversão</span></div><p className="mt-1 text-2xl font-bold">{conversionRate}%</p></CardContent></Card>
-              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><TrendingUp className="h-4 w-4" /><span className="text-xs">Orçamentos</span></div><p className="mt-1 text-2xl font-bold">{budgets.length}</p></CardContent></Card>
+              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><TrendingUp className="h-4 w-4" /><span className="text-xs">Orçamentos</span></div><p className="mt-1 text-2xl font-bold">{budgetCount}</p></CardContent></Card>
             </div>
 
             {/* Integrations Health */}
