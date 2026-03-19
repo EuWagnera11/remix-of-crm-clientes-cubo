@@ -38,6 +38,18 @@ export default function WhatsApp() {
     queryKey: ["evolution-status", clinicId],
     queryFn: async () => {
       if (!clinicId) return { status: "disconnected" };
+      // Check clinic_integrations table for simulated status
+      const { data: integration } = await supabase
+        .from("clinic_integrations")
+        .select("status, config")
+        .eq("clinic_id", clinicId)
+        .eq("provider", "evolution_api")
+        .maybeSingle();
+      if (integration?.status === "connected") {
+        const config = integration.config as any;
+        return { status: "connected", instance: config?.instance_name || "default", phone: config?.phone || "" };
+      }
+      // Fallback to edge function
       const { data, error } = await supabase.functions.invoke("evolution-api", {
         body: { action: "status", clinic_id: clinicId },
       });
