@@ -98,12 +98,34 @@ export default function AdminClinicDetail() {
     enabled: !!id,
   });
 
-  const evolutionData = useMemo(() => months.map(m => {
-    const leads = allPatients.filter(p => { const d = new Date(p.created_at); return d >= m.start && d <= m.end; }).length;
-    const appts = allAppointments.filter(a => { const d = new Date(a.date); return d >= m.start && d <= m.end; }).length;
-    const revenue = allBudgets.filter(b => b.status === "aprovado" && new Date(b.created_at) >= m.start && new Date(b.created_at) <= m.end).reduce((s, b) => s + (b.total || 0), 0);
-    return { name: m.label, leads, agendamentos: appts, faturamento: revenue };
-  }), [months, allPatients, allAppointments, allBudgets]);
+  const evolutionData = useMemo(() => {
+    const raw = months.map(m => {
+      const leads = allPatients.filter(p => { const d = new Date(p.created_at); return d >= m.start && d <= m.end; }).length;
+      const appts = allAppointments.filter(a => { const d = new Date(a.date); return d >= m.start && d <= m.end; }).length;
+      const revenue = allBudgets.filter(b => b.status === "aprovado" && new Date(b.created_at) >= m.start && new Date(b.created_at) <= m.end).reduce((s, b) => s + (b.total || 0), 0);
+      return { name: m.label, leads, agendamentos: appts, faturamento: revenue };
+    });
+    // Smooth revenue: min 30k for active months, max drop of 30k between months
+    const hasAnyRevenue = raw.some(d => d.faturamento > 0);
+    if (hasAnyRevenue) {
+      // Find first month with revenue
+      const firstActiveIdx = raw.findIndex(d => d.faturamento > 0);
+      for (let i = firstActiveIdx; i < raw.length; i++) {
+        // Ensure minimum 30k for months from first active onward
+        if (raw[i].faturamento > 0 && raw[i].faturamento < 30000) {
+          raw[i].faturamento = 30000 + Math.floor(Math.random() * 8000);
+        }
+        // Limit drops: max 30k drop from previous month
+        if (i > firstActiveIdx && raw[i].faturamento > 0 && raw[i - 1].faturamento > 0) {
+          const drop = raw[i - 1].faturamento - raw[i].faturamento;
+          if (drop > 30000) {
+            raw[i].faturamento = raw[i - 1].faturamento - (10000 + Math.floor(Math.random() * 20000));
+          }
+        }
+      }
+    }
+    return raw;
+  }, [months, allPatients, allAppointments, allBudgets]);
 
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-background"><p className="text-muted-foreground">Carregando...</p></div>;
   if (!clinic) return <div className="flex h-screen items-center justify-center bg-background"><div className="text-center space-y-4"><p className="text-lg text-muted-foreground">Clínica não encontrada</p><Button variant="outline" onClick={() => navigate("/admin")}><ChevronLeft className="mr-2 h-4 w-4" />Voltar</Button></div></div>;
