@@ -66,17 +66,10 @@ export default function Patients() {
   const { data: patients = [], isLoading } = useQuery({
     queryKey: ["patients", effectiveClinicId],
     queryFn: async () => {
-      let allData: any[] = [];
-      let from = 0;
-      while (true) {
-        let q = supabase.from("patients").select("*").order("created_at", { ascending: false }).range(from, from + 999);
-        if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
-        const { data } = await q;
-        allData = allData.concat(data || []);
-        if (!data || data.length < 1000) break;
-        from += 1000;
-      }
-      return allData;
+      let q = supabase.from("patients").select("*").order("created_at", { ascending: false });
+      if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
+      const { data } = await q;
+      return data || [];
     },
   });
 

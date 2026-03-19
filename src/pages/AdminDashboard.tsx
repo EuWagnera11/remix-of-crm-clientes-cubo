@@ -64,45 +64,24 @@ export default function AdminDashboard() {
   const { data: allPatients = [] } = useQuery({
     queryKey: ["admin-all-patients"],
     queryFn: async () => {
-      let allData: any[] = [];
-      let from = 0;
-      while (true) {
-        const { data } = await supabase.from("patients").select("id, clinic_id, created_at, stage").range(from, from + 999);
-        allData = allData.concat(data || []);
-        if (!data || data.length < 1000) break;
-        from += 1000;
-      }
-      return allData;
+      const { data } = await supabase.from("patients").select("id, clinic_id, created_at, stage");
+      return data || [];
     },
   });
 
   const { data: allAppointments = [] } = useQuery({
     queryKey: ["admin-all-appointments"],
     queryFn: async () => {
-      let allData: any[] = [];
-      let from = 0;
-      while (true) {
-        const { data } = await supabase.from("appointments").select("id, clinic_id, date, status").range(from, from + 999);
-        allData = allData.concat(data || []);
-        if (!data || data.length < 1000) break;
-        from += 1000;
-      }
-      return allData;
+      const { data } = await supabase.from("appointments").select("id, clinic_id, date, status");
+      return data || [];
     },
   });
 
   const { data: allBudgets = [] } = useQuery({
     queryKey: ["admin-all-budgets"],
     queryFn: async () => {
-      let allData: any[] = [];
-      let from = 0;
-      while (true) {
-        const { data } = await supabase.from("budgets").select("id, clinic_id, status, total, created_at").range(from, from + 999);
-        allData = allData.concat(data || []);
-        if (!data || data.length < 1000) break;
-        from += 1000;
-      }
-      return allData;
+      const { data } = await supabase.from("budgets").select("id, clinic_id, status, total, created_at");
+      return data || [];
     },
   });
 

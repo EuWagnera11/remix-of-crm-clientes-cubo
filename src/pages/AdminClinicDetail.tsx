@@ -39,49 +39,19 @@ export default function AdminClinicDetail() {
 
   const { data: patients = [] } = useQuery({
     queryKey: ["admin-clinic-patients", id],
-    queryFn: async () => {
-      let allData: any[] = [];
-      let from = 0;
-      while (true) {
-        const { data } = await supabase.from("patients").select("id, stage, created_at").eq("clinic_id", id!).range(from, from + 999);
-        allData = allData.concat(data || []);
-        if (!data || data.length < 1000) break;
-        from += 1000;
-      }
-      return allData;
-    },
+    queryFn: async () => { const { data } = await supabase.from("patients").select("id, stage, created_at").eq("clinic_id", id!); return data || []; },
     enabled: !!id,
   });
 
   const { data: appointments = [] } = useQuery({
     queryKey: ["admin-clinic-appointments", id],
-    queryFn: async () => {
-      let allData: any[] = [];
-      let from = 0;
-      while (true) {
-        const { data } = await supabase.from("appointments").select("id, status, date").eq("clinic_id", id!).range(from, from + 999);
-        allData = allData.concat(data || []);
-        if (!data || data.length < 1000) break;
-        from += 1000;
-      }
-      return allData;
-    },
+    queryFn: async () => { const { data } = await supabase.from("appointments").select("id, status, date").eq("clinic_id", id!); return data || []; },
     enabled: !!id,
   });
 
   const { data: budgets = [] } = useQuery({
     queryKey: ["admin-clinic-budgets", id],
-    queryFn: async () => {
-      let allData: any[] = [];
-      let from = 0;
-      while (true) {
-        const { data } = await supabase.from("budgets").select("id, status, total").eq("clinic_id", id!).range(from, from + 999);
-        allData = allData.concat(data || []);
-        if (!data || data.length < 1000) break;
-        from += 1000;
-      }
-      return allData;
-    },
+    queryFn: async () => { const { data } = await supabase.from("budgets").select("id, status, total").eq("clinic_id", id!); return data || []; },
     enabled: !!id,
   });
 

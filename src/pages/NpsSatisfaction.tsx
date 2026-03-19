@@ -29,17 +29,10 @@ export default function NpsSatisfaction() {
   const { data: patients = [] } = useQuery({
     queryKey: ["patients-select", effectiveClinicId],
     queryFn: async () => {
-      let allData: any[] = [];
-      let from = 0;
-      while (true) {
-        let q = supabase.from("patients").select("id, name").range(from, from + 999);
-        if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
-        const { data } = await q;
-        allData = allData.concat(data || []);
-        if (!data || data.length < 1000) break;
-        from += 1000;
-      }
-      return allData;
+      let q = supabase.from("patients").select("id, name");
+      if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
+      const { data } = await q;
+      return data || [];
     },
   });
 
