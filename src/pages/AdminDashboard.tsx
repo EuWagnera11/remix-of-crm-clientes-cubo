@@ -170,7 +170,7 @@ export default function AdminDashboard() {
   const totalAppointments = allAppointments.length;
   const totalRevenue = allBudgets.filter(b => b.status === "aprovado").reduce((s, b) => s + Number(b.total || 0), 0);
 
-  const filteredClinics = clinics.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredClinics = clinics.filter(c => !search || c.owner_name.toLowerCase().includes(search.toLowerCase()) || c.name.toLowerCase().includes(search.toLowerCase()));
 
   // Per-clinic metrics for ranking
   const clinicMetrics = clinics.map(c => {
