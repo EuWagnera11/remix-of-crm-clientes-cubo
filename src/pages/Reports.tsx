@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { fetchAll } from "@/lib/fetchAll";
 import { BarChart3, Users, Calendar, DollarSign, TrendingUp, Tag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
