@@ -189,7 +189,44 @@ export default function AdminClinicDetail() {
               </CardContent>
             </Card>
 
-            {/* Info Card */}
+            {/* 12-Month Evolution */}
+            <Card>
+              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" />Evolução 12 Meses</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2 font-medium">Leads & Agendamentos</p>
+                    {evolutionData.some(d => d.leads > 0 || d.agendamentos > 0) ? (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={evolutionData}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                          <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 10 }} />
+                          <YAxis allowDecimals={false} className="text-xs" tick={{ fontSize: 10 }} />
+                          <Tooltip />
+                          <Bar dataKey="leads" name="Leads" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
+                          <Bar dataKey="agendamentos" name="Agendamentos" fill="hsl(var(--primary) / 0.5)" radius={[2, 2, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <p className="py-8 text-center text-sm text-muted-foreground">Sem dados neste período.</p>}
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2 font-medium">Faturamento (R$)</p>
+                    {evolutionData.some(d => d.faturamento > 0) ? (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <LineChart data={evolutionData}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                          <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 10 }} />
+                          <YAxis className="text-xs" tick={{ fontSize: 10 }} />
+                          <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString("pt-BR")}`} />
+                          <Line type="monotone" dataKey="faturamento" name="Faturamento" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : <p className="py-8 text-center text-sm text-muted-foreground">Sem faturamento neste período.</p>}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader><CardTitle className="text-sm">Informações da Clínica</CardTitle></CardHeader>
               <CardContent className="space-y-4">
