@@ -111,7 +111,8 @@ export default function AdminClinicDetail() {
   const statusInfo = STATUS_MAP[clinic.status as string] || STATUS_MAP.ativa;
   const totalRevenue = Number(counts?.approved_revenue || 0);
   const budgetCount = Number(counts?.budget_count || 0);
-  const conversionRate = "—";
+  const approvedCount = allBudgets.filter(b => b.status === "aprovado").length;
+  const conversionRate = allBudgets.length > 0 ? ((approvedCount / allBudgets.length) * 100).toFixed(1) : "0";
   const whatsapp = integrations.find((i: any) => i.provider === "evolution_api");
   const gcal = integrations.find((i: any) => i.provider === "google_calendar");
 
