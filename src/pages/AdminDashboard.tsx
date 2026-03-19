@@ -49,6 +49,7 @@ export default function AdminDashboard() {
     ownerName: "", ownerEmail: "", primaryColor: "24 95% 53%", notes: "",
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [showSensitive, setShowSensitive] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   // ===== Queries =====
