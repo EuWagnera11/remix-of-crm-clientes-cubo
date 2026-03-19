@@ -39,19 +39,19 @@ export default function AdminClinicDetail() {
 
   const { data: patients = [] } = useQuery({
     queryKey: ["admin-clinic-patients", id],
-    queryFn: async () => { const { data } = await supabase.from("patients").select("id, stage, created_at").eq("clinic_id", id!); return data || []; },
+    queryFn: async () => await fetchAll("patients", "id, stage, created_at", { eq: { clinic_id: id! } }),
     enabled: !!id,
   });
 
   const { data: appointments = [] } = useQuery({
     queryKey: ["admin-clinic-appointments", id],
-    queryFn: async () => { const { data } = await supabase.from("appointments").select("id, status, date").eq("clinic_id", id!); return data || []; },
+    queryFn: async () => await fetchAll("appointments", "id, status, date", { eq: { clinic_id: id! } }),
     enabled: !!id,
   });
 
   const { data: budgets = [] } = useQuery({
     queryKey: ["admin-clinic-budgets", id],
-    queryFn: async () => { const { data } = await supabase.from("budgets").select("id, status, total").eq("clinic_id", id!); return data || []; },
+    queryFn: async () => await fetchAll("budgets", "id, status, total", { eq: { clinic_id: id! } }),
     enabled: !!id,
   });
 

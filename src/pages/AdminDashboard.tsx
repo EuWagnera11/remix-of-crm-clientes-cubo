@@ -64,24 +64,21 @@ export default function AdminDashboard() {
   const { data: allPatients = [] } = useQuery({
     queryKey: ["admin-all-patients"],
     queryFn: async () => {
-      const { data } = await supabase.from("patients").select("id, clinic_id, created_at, stage");
-      return data || [];
+      return await fetchAll("patients", "id, clinic_id, created_at, stage");
     },
   });
 
   const { data: allAppointments = [] } = useQuery({
     queryKey: ["admin-all-appointments"],
     queryFn: async () => {
-      const { data } = await supabase.from("appointments").select("id, clinic_id, date, status");
-      return data || [];
+      return await fetchAll("appointments", "id, clinic_id, date, status");
     },
   });
 
   const { data: allBudgets = [] } = useQuery({
     queryKey: ["admin-all-budgets"],
     queryFn: async () => {
-      const { data } = await supabase.from("budgets").select("id, clinic_id, status, total, created_at");
-      return data || [];
+      return await fetchAll("budgets", "id, clinic_id, status, total, created_at");
     },
   });
 
