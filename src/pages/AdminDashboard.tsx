@@ -14,7 +14,7 @@ import {
   Search, Eye, ChevronRight, Users, BarChart3,
   LayoutDashboard, ChevronLeft, Plus, Upload,
   Calendar, DollarSign, TrendingUp, Wifi, WifiOff, History,
-  Edit, CheckCircle, XCircle, Loader2, Ban, ShieldCheck,
+  Edit, CheckCircle, XCircle, Loader2, Ban, ShieldCheck, EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
