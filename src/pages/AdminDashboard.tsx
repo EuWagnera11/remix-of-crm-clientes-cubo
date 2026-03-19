@@ -64,8 +64,15 @@ export default function AdminDashboard() {
   const { data: allPatients = [] } = useQuery({
     queryKey: ["admin-all-patients"],
     queryFn: async () => {
-      const { data } = await supabase.from("patients").select("id, clinic_id, created_at, stage");
-      return data || [];
+      let allData: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data } = await supabase.from("patients").select("id, clinic_id, created_at, stage").range(from, from + 999);
+        allData = allData.concat(data || []);
+        if (!data || data.length < 1000) break;
+        from += 1000;
+      }
+      return allData;
     },
   });
 
