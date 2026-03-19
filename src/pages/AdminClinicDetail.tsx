@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +11,12 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line,
+} from "recharts";
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
   ativa: { label: "Ativa", className: "bg-green-500/10 text-green-500 border-green-500/20" },
@@ -58,6 +63,47 @@ export default function AdminClinicDetail() {
     queryFn: async () => { const { data } = await supabase.from("audit_logs").select("*").eq("clinic_id", id!).order("created_at", { ascending: false }).limit(20); return data || []; },
     enabled: !!id,
   });
+
+  // 12-month evolution data
+  const now = new Date();
+  const months = useMemo(() => Array.from({ length: 12 }, (_, i) => {
+    const d = subMonths(now, 11 - i);
+    return { start: startOfMonth(d), end: endOfMonth(d), label: format(d, "MMM yy", { locale: ptBR }) };
+  }), []);
+
+  const { data: allPatients = [] } = useQuery({
+    queryKey: ["admin-clinic-patients-hist", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("patients").select("created_at").eq("clinic_id", id!);
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: allAppointments = [] } = useQuery({
+    queryKey: ["admin-clinic-appts-hist", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("appointments").select("date").eq("clinic_id", id!);
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: allBudgets = [] } = useQuery({
+    queryKey: ["admin-clinic-budgets-hist", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("budgets").select("created_at, status, total").eq("clinic_id", id!);
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const evolutionData = useMemo(() => months.map(m => {
+    const leads = allPatients.filter(p => { const d = new Date(p.created_at); return d >= m.start && d <= m.end; }).length;
+    const appts = allAppointments.filter(a => { const d = new Date(a.date); return d >= m.start && d <= m.end; }).length;
+    const revenue = allBudgets.filter(b => b.status === "aprovado" && new Date(b.created_at) >= m.start && new Date(b.created_at) <= m.end).reduce((s, b) => s + (b.total || 0), 0);
+    return { name: m.label, leads, agendamentos: appts, faturamento: revenue };
+  }), [months, allPatients, allAppointments, allBudgets]);
 
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-background"><p className="text-muted-foreground">Carregando...</p></div>;
   if (!clinic) return <div className="flex h-screen items-center justify-center bg-background"><div className="text-center space-y-4"><p className="text-lg text-muted-foreground">Clínica não encontrada</p><Button variant="outline" onClick={() => navigate("/admin")}><ChevronLeft className="mr-2 h-4 w-4" />Voltar</Button></div></div>;
@@ -143,7 +189,44 @@ export default function AdminClinicDetail() {
               </CardContent>
             </Card>
 
-            {/* Info Card */}
+            {/* 12-Month Evolution */}
+            <Card>
+              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" />Evolução 12 Meses</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2 font-medium">Leads & Agendamentos</p>
+                    {evolutionData.some(d => d.leads > 0 || d.agendamentos > 0) ? (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={evolutionData}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                          <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 10 }} />
+                          <YAxis allowDecimals={false} className="text-xs" tick={{ fontSize: 10 }} />
+                          <Tooltip />
+                          <Bar dataKey="leads" name="Leads" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
+                          <Bar dataKey="agendamentos" name="Agendamentos" fill="hsl(var(--primary) / 0.5)" radius={[2, 2, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <p className="py-8 text-center text-sm text-muted-foreground">Sem dados neste período.</p>}
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2 font-medium">Faturamento (R$)</p>
+                    {evolutionData.some(d => d.faturamento > 0) ? (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <LineChart data={evolutionData}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                          <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 10 }} />
+                          <YAxis className="text-xs" tick={{ fontSize: 10 }} />
+                          <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString("pt-BR")}`} />
+                          <Line type="monotone" dataKey="faturamento" name="Faturamento" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : <p className="py-8 text-center text-sm text-muted-foreground">Sem faturamento neste período.</p>}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader><CardTitle className="text-sm">Informações da Clínica</CardTitle></CardHeader>
               <CardContent className="space-y-4">
