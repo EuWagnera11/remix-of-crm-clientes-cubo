@@ -64,6 +64,47 @@ export default function AdminClinicDetail() {
     enabled: !!id,
   });
 
+  // 12-month evolution data
+  const now = new Date();
+  const months = useMemo(() => Array.from({ length: 12 }, (_, i) => {
+    const d = subMonths(now, 11 - i);
+    return { start: startOfMonth(d), end: endOfMonth(d), label: format(d, "MMM yy", { locale: ptBR }) };
+  }), []);
+
+  const { data: allPatients = [] } = useQuery({
+    queryKey: ["admin-clinic-patients-hist", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("patients").select("created_at").eq("clinic_id", id!);
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: allAppointments = [] } = useQuery({
+    queryKey: ["admin-clinic-appts-hist", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("appointments").select("date").eq("clinic_id", id!);
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: allBudgets = [] } = useQuery({
+    queryKey: ["admin-clinic-budgets-hist", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("budgets").select("created_at, status, total").eq("clinic_id", id!);
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const evolutionData = useMemo(() => months.map(m => {
+    const leads = allPatients.filter(p => { const d = new Date(p.created_at); return d >= m.start && d <= m.end; }).length;
+    const appts = allAppointments.filter(a => { const d = new Date(a.date); return d >= m.start && d <= m.end; }).length;
+    const revenue = allBudgets.filter(b => b.status === "aprovado" && new Date(b.created_at) >= m.start && new Date(b.created_at) <= m.end).reduce((s, b) => s + (b.total || 0), 0);
+    return { name: m.label, leads, agendamentos: appts, faturamento: revenue };
+  }), [months, allPatients, allAppointments, allBudgets]);
+
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-background"><p className="text-muted-foreground">Carregando...</p></div>;
   if (!clinic) return <div className="flex h-screen items-center justify-center bg-background"><div className="text-center space-y-4"><p className="text-lg text-muted-foreground">Clínica não encontrada</p><Button variant="outline" onClick={() => navigate("/admin")}><ChevronLeft className="mr-2 h-4 w-4" />Voltar</Button></div></div>;
 
