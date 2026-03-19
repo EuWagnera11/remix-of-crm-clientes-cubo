@@ -385,7 +385,6 @@ export default function AdminDashboard() {
                         </Select>
                       </td>
                       <td className="py-3 text-muted-foreground">{c.city || "—"}{c.state ? `, ${c.state}` : ""}</td>
-                      <td className="py-3">{c.owner_name}</td>
                       <td className="py-3">{m?.patients || 0}</td>
                       <td className="py-3">
                         <div className="flex gap-1.5">
