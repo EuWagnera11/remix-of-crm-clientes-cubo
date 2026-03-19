@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { BarChart3, Users, Calendar, DollarSign, TrendingUp, Tag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,14 +14,26 @@ import {
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--destructive))", "hsl(142 71% 45%)", "hsl(217 91% 60%)", "hsl(38 92% 50%)", "hsl(270 60% 55%)"];
 
+const PERIOD_OPTIONS = [
+  { value: "1", label: "1 mês" },
+  { value: "3", label: "3 meses" },
+  { value: "6", label: "6 meses" },
+  { value: "12", label: "12 meses" },
+] as const;
+
 export default function Reports() {
   const { clinicId } = useAuth();
+  const [period, setPeriod] = useState("6");
+  const periodNum = Number(period);
   const now = new Date();
 
-  const months = useMemo(() => Array.from({ length: 6 }, (_, i) => {
-    const d = subMonths(now, 5 - i);
-    return { start: startOfMonth(d), end: endOfMonth(d), label: format(d, "MMM", { locale: ptBR }) };
-  }), []);
+  const months = useMemo(() => Array.from({ length: periodNum }, (_, i) => {
+    const d = subMonths(now, periodNum - 1 - i);
+    return { start: startOfMonth(d), end: endOfMonth(d), label: format(d, periodNum <= 3 ? "MMM yy" : "MMM", { locale: ptBR }) };
+  }), [periodNum]);
+
+  const rangeStart = months[0]?.start;
+  const rangeEnd = months[months.length - 1]?.end;
 
   const { data: patients } = useQuery({
     queryKey: ["report-patients", clinicId],
@@ -46,45 +59,55 @@ export default function Reports() {
     enabled: !!clinicId,
   });
 
+  // Filter data by selected period
+  const inRange = (dateStr: string) => {
+    if (!rangeStart || !rangeEnd) return false;
+    const d = new Date(dateStr);
+    return d >= rangeStart && d <= rangeEnd;
+  };
+
+  const filteredPatients = useMemo(() => patients?.filter(p => inRange(p.created_at)) || [], [patients, rangeStart, rangeEnd]);
+  const filteredAppointments = useMemo(() => appointments?.filter(a => inRange(a.date)) || [], [appointments, rangeStart, rangeEnd]);
+  const filteredBudgets = useMemo(() => budgets?.filter(b => inRange(b.created_at)) || [], [budgets, rangeStart, rangeEnd]);
+  const filteredNps = useMemo(() => npsData?.filter(n => inRange(n.created_at)) || [], [npsData, rangeStart, rangeEnd]);
+
   const leadsPerMonth = useMemo(() => {
-    if (!patients) return [];
-    return months.map(m => ({ name: m.label, leads: patients.filter(p => { const d = new Date(p.created_at); return d >= m.start && d <= m.end; }).length }));
-  }, [patients, months]);
+    if (!filteredPatients.length) return [];
+    return months.map(m => ({ name: m.label, leads: filteredPatients.filter(p => { const d = new Date(p.created_at); return d >= m.start && d <= m.end; }).length }));
+  }, [filteredPatients, months]);
 
   const revenuePerMonth = useMemo(() => {
-    if (!budgets) return [];
-    return months.map(m => ({ name: m.label, faturamento: budgets.filter(b => b.status === "aprovado" && new Date(b.created_at) >= m.start && new Date(b.created_at) <= m.end).reduce((sum, b) => sum + (b.total || 0), 0) }));
-  }, [budgets, months]);
+    if (!filteredBudgets.length) return [];
+    return months.map(m => ({ name: m.label, faturamento: filteredBudgets.filter(b => b.status === "aprovado" && new Date(b.created_at) >= m.start && new Date(b.created_at) <= m.end).reduce((sum, b) => sum + (b.total || 0), 0) }));
+  }, [filteredBudgets, months]);
 
   const budgetStatusPie = useMemo(() => {
-    if (!budgets?.length) return [];
+    if (!filteredBudgets.length) return [];
     const counts: Record<string, number> = {};
-    budgets.forEach(b => { counts[b.status || "pendente"] = (counts[b.status || "pendente"] || 0) + 1; });
+    filteredBudgets.forEach(b => { counts[b.status || "pendente"] = (counts[b.status || "pendente"] || 0) + 1; });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [budgets]);
+  }, [filteredBudgets]);
 
   const sourcePie = useMemo(() => {
-    if (!patients?.length) return [];
+    if (!filteredPatients.length) return [];
     const counts: Record<string, number> = {};
-    patients.forEach(p => { counts[p.source || "manual"] = (counts[p.source || "manual"] || 0) + 1; });
+    filteredPatients.forEach(p => { counts[p.source || "manual"] = (counts[p.source || "manual"] || 0) + 1; });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [patients]);
+  }, [filteredPatients]);
 
-  // UTM Campaign breakdown
   const campaignPie = useMemo(() => {
-    if (!patients?.length) return [];
-    const withCampaign = patients.filter((p: any) => p.utm_campaign);
+    if (!filteredPatients.length) return [];
+    const withCampaign = filteredPatients.filter((p: any) => p.utm_campaign);
     if (!withCampaign.length) return [];
     const counts: Record<string, number> = {};
     withCampaign.forEach((p: any) => { counts[p.utm_campaign] = (counts[p.utm_campaign] || 0) + 1; });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [patients]);
+  }, [filteredPatients]);
 
-  // Professional performance
   const professionalStats = useMemo(() => {
-    if (!appointments?.length) return [];
+    if (!filteredAppointments.length) return [];
     const stats: Record<string, { total: number; realized: number; noshow: number }> = {};
-    appointments.forEach((a: any) => {
+    filteredAppointments.forEach((a: any) => {
       const name = a.professional_name || "Não atribuído";
       if (!stats[name]) stats[name] = { total: 0, realized: 0, noshow: 0 };
       stats[name].total++;
@@ -92,20 +115,31 @@ export default function Reports() {
       if (a.status === "no-show") stats[name].noshow++;
     });
     return Object.entries(stats).map(([name, s]) => ({ name, ...s, rate: s.total > 0 ? Math.round((s.realized / s.total) * 100) : 0 }));
-  }, [appointments]);
+  }, [filteredAppointments]);
 
-  const npsAvg = useMemo(() => npsData?.length ? (npsData.reduce((s, n) => s + n.score, 0) / npsData.length).toFixed(1) : null, [npsData]);
+  const npsAvg = useMemo(() => filteredNps.length ? (filteredNps.reduce((s, n) => s + n.score, 0) / filteredNps.length).toFixed(1) : null, [filteredNps]);
 
-  const totalLeads = patients?.length || 0;
-  const totalAppointments = appointments?.length || 0;
-  const totalRevenue = budgets?.filter(b => b.status === "aprovado").reduce((s, b) => s + (b.total || 0), 0) || 0;
-  const conversionRate = budgets?.length ? ((budgets.filter(b => b.status === "aprovado").length / budgets.length) * 100).toFixed(1) : "0";
+  const totalLeads = filteredPatients.length;
+  const totalAppointments = filteredAppointments.length;
+  const totalRevenue = filteredBudgets.filter(b => b.status === "aprovado").reduce((s, b) => s + (b.total || 0), 0);
+  const conversionRate = filteredBudgets.length ? ((filteredBudgets.filter(b => b.status === "aprovado").length / filteredBudgets.length) * 100).toFixed(1) : "0";
 
   if (!clinicId) return (<div className="space-y-6"><h1 className="text-2xl font-bold">Relatórios</h1><Card><CardContent className="py-16 text-center"><p className="text-muted-foreground">Selecione uma clínica.</p></CardContent></Card></div>);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Relatórios</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold">Relatórios</h1>
+        <Tabs value={period} onValueChange={setPeriod}>
+          <TabsList>
+            {PERIOD_OPTIONS.map(o => (
+              <TabsTrigger key={o.value} value={o.value} className="text-xs sm:text-sm">
+                {o.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Total Leads</p></div><p className="text-2xl font-bold">{totalLeads}</p></CardContent></Card>
@@ -161,7 +195,6 @@ export default function Reports() {
         </Card>
       </div>
 
-      {/* New: Campaign & Professional stats */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {campaignPie.length > 0 && (
           <Card>
