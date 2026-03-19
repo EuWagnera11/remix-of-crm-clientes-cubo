@@ -29,10 +29,17 @@ export default function BudgetPipeline() {
   const { data: budgets = [] } = useQuery({
     queryKey: ["budgets-pipeline", effectiveClinicId],
     queryFn: async () => {
-      let q = supabase.from("budgets").select("*, patients(name)").order("updated_at", { ascending: false });
-      if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
-      const { data } = await q;
-      return data || [];
+      let allData: any[] = [];
+      let from = 0;
+      while (true) {
+        let q = supabase.from("budgets").select("*, patients(name)").order("updated_at", { ascending: false }).range(from, from + 999);
+        if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
+        const { data } = await q;
+        allData = allData.concat(data || []);
+        if (!data || data.length < 1000) break;
+        from += 1000;
+      }
+      return allData;
     },
   });
 
