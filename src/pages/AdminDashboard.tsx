@@ -292,6 +292,11 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Gestão de Clínicas</h1>
+                <div className="flex items-center gap-2">
+                  <Button variant={showSensitive ? "default" : "outline"} size="sm" className="gap-1.5" onClick={() => setShowSensitive(!showSensitive)}>
+                    {showSensitive ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                    {showSensitive ? "Ocultar Dados" : "Mostrar Dados"}
+                  </Button>
                 <Dialog open={newClinicOpen} onOpenChange={setNewClinicOpen}>
                   <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Nova Clínica</Button></DialogTrigger>
                   <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
