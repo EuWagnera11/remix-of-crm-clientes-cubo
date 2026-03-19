@@ -79,8 +79,15 @@ export default function AdminDashboard() {
   const { data: allAppointments = [] } = useQuery({
     queryKey: ["admin-all-appointments"],
     queryFn: async () => {
-      const { data } = await supabase.from("appointments").select("id, clinic_id, date, status");
-      return data || [];
+      let allData: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data } = await supabase.from("appointments").select("id, clinic_id, date, status").range(from, from + 999);
+        allData = allData.concat(data || []);
+        if (!data || data.length < 1000) break;
+        from += 1000;
+      }
+      return allData;
     },
   });
 
