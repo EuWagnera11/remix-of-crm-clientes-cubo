@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, Users, Tag, X, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
