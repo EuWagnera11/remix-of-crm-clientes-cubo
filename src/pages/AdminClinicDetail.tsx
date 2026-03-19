@@ -105,17 +105,20 @@ export default function AdminClinicDetail() {
       const revenue = allBudgets.filter(b => b.status === "aprovado" && new Date(b.created_at) >= m.start && new Date(b.created_at) <= m.end).reduce((s, b) => s + (b.total || 0), 0);
       return { name: m.label, leads, agendamentos: appts, faturamento: revenue };
     });
-    // Smooth revenue: min 30k for active months, max drop of 30k between months
+    // Smooth revenue: min 27k, max 600k, max drop 30k between months
     const hasAnyRevenue = raw.some(d => d.faturamento > 0);
     if (hasAnyRevenue) {
-      // Find first month with revenue
       const firstActiveIdx = raw.findIndex(d => d.faturamento > 0);
       for (let i = firstActiveIdx; i < raw.length; i++) {
-        // Ensure minimum 30k for months from first active onward
-        if (raw[i].faturamento > 0 && raw[i].faturamento < 30000) {
-          raw[i].faturamento = 30000 + Math.floor(Math.random() * 8000);
+        // Ensure minimum 27k for active months
+        if (raw[i].faturamento > 0 && raw[i].faturamento < 27000) {
+          raw[i].faturamento = 27000 + Math.floor(Math.random() * 11000);
         }
-        // Limit drops: max 30k drop from previous month
+        // Cap at 600k
+        if (raw[i].faturamento > 600000) {
+          raw[i].faturamento = 500000 + Math.floor(Math.random() * 100000);
+        }
+        // Limit drops: max 30k from previous month
         if (i > firstActiveIdx && raw[i].faturamento > 0 && raw[i - 1].faturamento > 0) {
           const drop = raw[i - 1].faturamento - raw[i].faturamento;
           if (drop > 30000) {
