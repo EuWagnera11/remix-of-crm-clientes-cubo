@@ -360,20 +360,20 @@ export default function AdminDashboard() {
 
               <Card><CardContent className="pt-6 overflow-x-auto"><table className="w-full text-sm">
                 <thead><tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="pb-3 font-medium">Clínica</th><th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Cidade</th><th className="pb-3 font-medium">Proprietário</th>
+                  <th className="pb-3 font-medium">Proprietário</th><th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 font-medium">Cidade</th>
                   <th className="pb-3 font-medium">Leads</th><th className="pb-3 font-medium">Integrações</th>
                   <th className="pb-3 font-medium">Ações</th>
                 </tr></thead>
                 <tbody>{loadingClinics ? (
-                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Carregando...</td></tr>
+                  <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">Carregando...</td></tr>
                 ) : filteredClinics.length === 0 ? (
-                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Nenhuma clínica encontrada</td></tr>
+                  <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">Nenhuma clínica encontrada</td></tr>
                 ) : filteredClinics.map(c => {
                   const m = clinicMetrics.find(cm => cm.id === c.id);
                   return (
                     <tr key={c.id} className="border-b border-border/50">
-                      <td className="py-3"><div><span className="font-medium">{c.name}</span><p className="text-xs text-muted-foreground">{c.owner_email}</p></div></td>
+                      <td className="py-3"><div><span className="font-medium">{c.owner_name}</span><p className="text-xs text-muted-foreground">{c.owner_email}</p></div></td>
                       <td className="py-3">
                         <Select value={c.status} onValueChange={v => updateStatusMutation.mutate({ id: c.id, status: v })}>
                           <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
