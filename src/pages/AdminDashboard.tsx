@@ -184,7 +184,7 @@ export default function AdminDashboard() {
   });
 
   const rankingByPatients = [...clinicMetrics].sort((a, b) => b.patients - a.patients);
-  const rankingChart = rankingByPatients.slice(0, 10).map(c => ({ name: c.name.length > 15 ? c.name.slice(0, 15) + "…" : c.name, pacientes: c.patients, agendamentos: c.appointments }));
+  const rankingChart = rankingByPatients.slice(0, 10).map(c => ({ name: c.owner_name.length > 15 ? c.owner_name.slice(0, 15) + "…" : c.owner_name, pacientes: c.patients, agendamentos: c.appointments }));
 
   // Churn risk: clinics with 0 appointments or inactive
   const churnRisk = clinicMetrics.filter(c => c.status !== "cancelada" && (c.appointments === 0 || c.patients === 0));
