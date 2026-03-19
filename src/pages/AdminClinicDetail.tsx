@@ -37,21 +37,13 @@ export default function AdminClinicDetail() {
     enabled: !!id,
   });
 
-  const { data: patients = [] } = useQuery({
-    queryKey: ["admin-clinic-patients", id],
-    queryFn: async () => await fetchAll("patients", "id, stage, created_at", { eq: { clinic_id: id! } }),
-    enabled: !!id,
-  });
-
-  const { data: appointments = [] } = useQuery({
-    queryKey: ["admin-clinic-appointments", id],
-    queryFn: async () => await fetchAll("appointments", "id, status, date", { eq: { clinic_id: id! } }),
-    enabled: !!id,
-  });
-
-  const { data: budgets = [] } = useQuery({
-    queryKey: ["admin-clinic-budgets", id],
-    queryFn: async () => await fetchAll("budgets", "id, status, total", { eq: { clinic_id: id! } }),
+  const { data: counts } = useQuery({
+    queryKey: ["admin-clinic-counts", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("clinic_detail_counts", { _clinic_id: id! });
+      if (error) throw error;
+      return data?.[0] || { patient_count: 0, appointment_count: 0, budget_count: 0, approved_revenue: 0, lead_count: 0, in_treatment_count: 0 };
+    },
     enabled: !!id,
   });
 
