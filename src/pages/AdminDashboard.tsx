@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { fetchAll } from "@/lib/fetchAll";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,24 +61,12 @@ export default function AdminDashboard() {
     },
   });
 
-  const { data: allPatients = [] } = useQuery({
-    queryKey: ["admin-all-patients"],
+  const { data: clinicMetricsData = [] } = useQuery({
+    queryKey: ["admin-clinic-metrics"],
     queryFn: async () => {
-      return await fetchAll("patients", "id, clinic_id, created_at, stage");
-    },
-  });
-
-  const { data: allAppointments = [] } = useQuery({
-    queryKey: ["admin-all-appointments"],
-    queryFn: async () => {
-      return await fetchAll("appointments", "id, clinic_id, date, status");
-    },
-  });
-
-  const { data: allBudgets = [] } = useQuery({
-    queryKey: ["admin-all-budgets"],
-    queryFn: async () => {
-      return await fetchAll("budgets", "id, clinic_id, status, total, created_at");
+      const { data, error } = await supabase.rpc("admin_clinic_metrics");
+      if (error) throw error;
+      return data || [];
     },
   });
 
@@ -164,21 +151,21 @@ export default function AdminDashboard() {
 
   const activeClinics = clinics.filter(c => c.status === "ativa").length;
   const canceladas = clinics.filter(c => c.status === "cancelada").length;
-  const totalLeads = allPatients.length;
-  const totalAppointments = allAppointments.length;
-  const totalRevenue = allBudgets.filter(b => b.status === "aprovado").reduce((s, b) => s + Number(b.total || 0), 0);
+  const totalLeads = clinicMetricsData.reduce((s: number, m: any) => s + Number(m.patient_count || 0), 0);
+  const totalAppointments = clinicMetricsData.reduce((s: number, m: any) => s + Number(m.appointment_count || 0), 0);
+  const totalRevenue = clinicMetricsData.reduce((s: number, m: any) => s + Number(m.approved_revenue || 0), 0);
 
   const filteredClinics = clinics.filter(c => !search || c.owner_name.toLowerCase().includes(search.toLowerCase()) || c.name.toLowerCase().includes(search.toLowerCase()));
 
   // Per-clinic metrics for ranking
   const clinicMetrics = clinics.map(c => {
-    const patients = allPatients.filter(p => p.clinic_id === c.id).length;
-    const appointments = allAppointments.filter(a => a.clinic_id === c.id).length;
-    const revenue = allBudgets.filter(b => b.clinic_id === c.id && b.status === "aprovado").reduce((s, b) => s + Number(b.total || 0), 0);
-    const budgets = allBudgets.filter(b => b.clinic_id === c.id).length;
+    const m = clinicMetricsData.find((cm: any) => cm.clinic_id === c.id);
+    const patients = Number(m?.patient_count || 0);
+    const appointments = Number(m?.appointment_count || 0);
+    const revenue = Number(m?.approved_revenue || 0);
     const whatsapp = allIntegrations.find(i => i.clinic_id === c.id && i.provider === "evolution_api");
     const gcal = allIntegrations.find(i => i.clinic_id === c.id && i.provider === "google_calendar");
-    return { ...c, patients, appointments, revenue, budgets, whatsappConnected: whatsapp?.status === "connected", gcalConnected: gcal?.status === "connected" };
+    return { ...c, patients, appointments, revenue, budgets: 0, whatsappConnected: whatsapp?.status === "connected", gcalConnected: gcal?.status === "connected" };
   });
 
   const rankingByPatients = [...clinicMetrics].sort((a, b) => b.patients - a.patients);
@@ -424,7 +411,7 @@ export default function AdminDashboard() {
                 <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Total Leads</p></div><p className="text-2xl font-bold">{totalLeads}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Agendamentos</p></div><p className="text-2xl font-bold">{totalAppointments}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Faturamento</p></div><p className="text-2xl font-bold">R$ {totalRevenue.toLocaleString("pt-BR")}</p></CardContent></Card>
-                <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Orçamentos</p></div><p className="text-2xl font-bold">{allBudgets.length}</p></CardContent></Card>
+                <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Orçamentos</p></div><p className="text-2xl font-bold">—</p></CardContent></Card>
               </div>
 
               {/* Ranking Chart */}

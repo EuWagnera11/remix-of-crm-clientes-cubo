@@ -803,6 +803,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_clinic_metrics: {
+        Args: never
+        Returns: {
+          appointment_count: number
+          approved_revenue: number
+          clinic_id: string
+          patient_count: number
+        }[]
+      }
+      clinic_detail_counts: {
+        Args: { _clinic_id: string }
+        Returns: {
+          appointment_count: number
+          approved_revenue: number
+          budget_count: number
+          in_treatment_count: number
+          lead_count: number
+          patient_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -1,5 +1,4 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { fetchAll } from "@/lib/fetchAll";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,21 +37,13 @@ export default function AdminClinicDetail() {
     enabled: !!id,
   });
 
-  const { data: patients = [] } = useQuery({
-    queryKey: ["admin-clinic-patients", id],
-    queryFn: async () => await fetchAll("patients", "id, stage, created_at", { eq: { clinic_id: id! } }),
-    enabled: !!id,
-  });
-
-  const { data: appointments = [] } = useQuery({
-    queryKey: ["admin-clinic-appointments", id],
-    queryFn: async () => await fetchAll("appointments", "id, status, date", { eq: { clinic_id: id! } }),
-    enabled: !!id,
-  });
-
-  const { data: budgets = [] } = useQuery({
-    queryKey: ["admin-clinic-budgets", id],
-    queryFn: async () => await fetchAll("budgets", "id, status, total", { eq: { clinic_id: id! } }),
+  const { data: counts } = useQuery({
+    queryKey: ["admin-clinic-counts", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("clinic_detail_counts", { _clinic_id: id! });
+      if (error) throw error;
+      return data?.[0] || { patient_count: 0, appointment_count: 0, budget_count: 0, approved_revenue: 0, lead_count: 0, in_treatment_count: 0 };
+    },
     enabled: !!id,
   });
 
@@ -72,8 +63,9 @@ export default function AdminClinicDetail() {
   if (!clinic) return <div className="flex h-screen items-center justify-center bg-background"><div className="text-center space-y-4"><p className="text-lg text-muted-foreground">Clínica não encontrada</p><Button variant="outline" onClick={() => navigate("/admin")}><ChevronLeft className="mr-2 h-4 w-4" />Voltar</Button></div></div>;
 
   const statusInfo = STATUS_MAP[clinic.status as string] || STATUS_MAP.ativa;
-  const totalRevenue = budgets.filter(b => b.status === "aprovado").reduce((s, b) => s + Number(b.total || 0), 0);
-  const conversionRate = budgets.length > 0 ? ((budgets.filter(b => b.status === "aprovado").length / budgets.length) * 100).toFixed(1) : "0";
+  const totalRevenue = Number(counts?.approved_revenue || 0);
+  const budgetCount = Number(counts?.budget_count || 0);
+  const conversionRate = "—";
   const whatsapp = integrations.find((i: any) => i.provider === "evolution_api");
   const gcal = integrations.find((i: any) => i.provider === "google_calendar");
 
@@ -119,11 +111,11 @@ export default function AdminClinicDetail() {
 
             {/* KPIs */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" /><span className="text-xs">Leads</span></div><p className="mt-1 text-2xl font-bold">{patients.length}</p></CardContent></Card>
-              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-4 w-4" /><span className="text-xs">Agendamentos</span></div><p className="mt-1 text-2xl font-bold">{appointments.length}</p></CardContent></Card>
+              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" /><span className="text-xs">Leads</span></div><p className="mt-1 text-2xl font-bold">{Number(counts?.patient_count || 0)}</p></CardContent></Card>
+              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-4 w-4" /><span className="text-xs">Agendamentos</span></div><p className="mt-1 text-2xl font-bold">{Number(counts?.appointment_count || 0)}</p></CardContent></Card>
               <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><DollarSign className="h-4 w-4" /><span className="text-xs">Faturamento</span></div><p className="mt-1 text-2xl font-bold">R$ {totalRevenue.toLocaleString("pt-BR")}</p></CardContent></Card>
               <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><TrendingUp className="h-4 w-4" /><span className="text-xs">Conversão</span></div><p className="mt-1 text-2xl font-bold">{conversionRate}%</p></CardContent></Card>
-              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><TrendingUp className="h-4 w-4" /><span className="text-xs">Orçamentos</span></div><p className="mt-1 text-2xl font-bold">{budgets.length}</p></CardContent></Card>
+              <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><TrendingUp className="h-4 w-4" /><span className="text-xs">Orçamentos</span></div><p className="mt-1 text-2xl font-bold">{budgetCount}</p></CardContent></Card>
             </div>
 
             {/* Integrations Health */}

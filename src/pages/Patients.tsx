@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { fetchAll } from "@/lib/fetchAll";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, Users, Tag, X, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -67,9 +66,11 @@ export default function Patients() {
   const { data: patients = [], isLoading } = useQuery({
     queryKey: ["patients", effectiveClinicId],
     queryFn: async () => {
-      const filters: any = { order: { column: "created_at", ascending: false } };
-      if (effectiveClinicId) filters.eq = { clinic_id: effectiveClinicId };
-      return await fetchAll("patients", "*", filters);
+      let q = supabase.from("patients").select("*").order("created_at", { ascending: false }).limit(500);
+      if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data || [];
     },
   });
 
