@@ -37,25 +37,25 @@ export default function Reports() {
 
   const { data: patients } = useQuery({
     queryKey: ["report-patients", clinicId],
-    queryFn: async () => { if (!clinicId) return []; return await fetchAll("patients", "id, created_at, stage, source, utm_source, utm_campaign, tags", { eq: { clinic_id: clinicId } }); },
+    queryFn: async () => { if (!clinicId) return []; const { data } = await supabase.from("patients").select("id, created_at, stage, source, utm_source, utm_campaign, tags").eq("clinic_id", clinicId).limit(1000); return data || []; },
     enabled: !!clinicId,
   });
 
   const { data: appointments } = useQuery({
     queryKey: ["report-appointments", clinicId],
-    queryFn: async () => { if (!clinicId) return []; return await fetchAll("appointments", "id, date, status, professional_name", { eq: { clinic_id: clinicId } }); },
+    queryFn: async () => { if (!clinicId) return []; const { data } = await supabase.from("appointments").select("id, date, status, professional_name").eq("clinic_id", clinicId).limit(1000); return data || []; },
     enabled: !!clinicId,
   });
 
   const { data: budgets } = useQuery({
     queryKey: ["report-budgets", clinicId],
-    queryFn: async () => { if (!clinicId) return []; return await fetchAll("budgets", "id, created_at, status, total", { eq: { clinic_id: clinicId } }); },
+    queryFn: async () => { if (!clinicId) return []; const { data } = await supabase.from("budgets").select("id, created_at, status, total").eq("clinic_id", clinicId).limit(1000); return data || []; },
     enabled: !!clinicId,
   });
 
   const { data: npsData } = useQuery({
     queryKey: ["report-nps", clinicId],
-    queryFn: async () => { if (!clinicId) return []; return await fetchAll("nps_responses", "id, score, created_at", { eq: { clinic_id: clinicId } }); },
+    queryFn: async () => { if (!clinicId) return []; const { data } = await supabase.from("nps_responses").select("id, score, created_at").eq("clinic_id", clinicId).limit(1000); return data || []; },
     enabled: !!clinicId,
   });
 
