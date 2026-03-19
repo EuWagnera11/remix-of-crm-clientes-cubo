@@ -343,6 +343,7 @@ export default function AdminDashboard() {
                     </div>
                   </DialogContent>
                 </Dialog>
+                </div>
               </div>
 
               <div className="flex gap-2">
