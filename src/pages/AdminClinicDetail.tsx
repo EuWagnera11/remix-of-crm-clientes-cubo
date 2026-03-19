@@ -105,28 +105,6 @@ export default function AdminClinicDetail() {
       const revenue = allBudgets.filter(b => b.status === "aprovado" && new Date(b.created_at) >= m.start && new Date(b.created_at) <= m.end).reduce((s, b) => s + (b.total || 0), 0);
       return { name: m.label, leads, agendamentos: appts, faturamento: revenue };
     });
-    // Smooth revenue: min 27k, max 600k, max drop 30k between months
-    const hasAnyRevenue = raw.some(d => d.faturamento > 0);
-    if (hasAnyRevenue) {
-      const firstActiveIdx = raw.findIndex(d => d.faturamento > 0);
-      for (let i = firstActiveIdx; i < raw.length; i++) {
-        // Ensure minimum 27k for active months
-        if (raw[i].faturamento > 0 && raw[i].faturamento < 27000) {
-          raw[i].faturamento = 27000 + Math.floor(Math.random() * 11000);
-        }
-        // Cap at 600k
-        if (raw[i].faturamento > 600000) {
-          raw[i].faturamento = 500000 + Math.floor(Math.random() * 100000);
-        }
-        // Limit drops: max 30k from previous month
-        if (i > firstActiveIdx && raw[i].faturamento > 0 && raw[i - 1].faturamento > 0) {
-          const drop = raw[i - 1].faturamento - raw[i].faturamento;
-          if (drop > 30000) {
-            raw[i].faturamento = raw[i - 1].faturamento - (10000 + Math.floor(Math.random() * 20000));
-          }
-        }
-      }
-    }
     return raw;
   }, [months, allPatients, allAppointments, allBudgets]);
 
