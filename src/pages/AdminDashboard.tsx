@@ -411,7 +411,7 @@ export default function AdminDashboard() {
                 <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Total Leads</p></div><p className="text-2xl font-bold">{totalLeads}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Agendamentos</p></div><p className="text-2xl font-bold">{totalAppointments}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Faturamento</p></div><p className="text-2xl font-bold">R$ {totalRevenue.toLocaleString("pt-BR")}</p></CardContent></Card>
-                <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Orçamentos</p></div><p className="text-2xl font-bold">{allBudgets.length}</p></CardContent></Card>
+                <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Orçamentos</p></div><p className="text-2xl font-bold">—</p></CardContent></Card>
               </div>
 
               {/* Ranking Chart */}
